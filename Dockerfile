@@ -21,3 +21,13 @@ cd czmq && \
 ./autogen.sh && ./configure && make check && \
 make install && \
 ldconfig
+
+EXPOSE 5555
+
+RUN mkdir /home/irpc
+
+COPY ./irpc/kernel.c /home/irpc
+
+WORKDIR /home/irpc
+
+CMD ["/bin/bash"]
