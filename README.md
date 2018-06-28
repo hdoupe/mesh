@@ -15,7 +15,7 @@ Terminal window 1:
 
 In container run:
 ```
-gcc kernel.c -o kernel -lczmq -lzmq`
+gcc kernel.c -o kernel -lczmq -lzmq
 ./kernel
 ```
 
