@@ -1,32 +1,12 @@
-FROM heroku/miniconda:3
+FROM zeromqorg/czmq
 
-RUN apt-get update
-RUN apt-get install -y \
-    git-all build-essential libtool \
-    pkg-config autotools-dev autoconf automake cmake \
-    uuid-dev libpcre3-dev valgrind
-
-WORKDIR /home
-
-RUN git clone git://github.com/zeromq/libzmq.git && \
-cd libzmq && \
-./autogen.sh && \
-./configure && \
-make check && \
-make install && \
-ldconfig
-
-RUN git clone git://github.com/zeromq/czmq.git && \
-cd czmq && \
-./autogen.sh && ./configure && make check && \
-make install && \
-ldconfig
+USER root
 
 EXPOSE 5555
 
 RUN mkdir /home/irpc
 
-COPY ./irpc/kernel.c /home/irpc
+COPY ./irpc/c_rpc/kernel.c /home/irpc
 
 WORKDIR /home/irpc
 
