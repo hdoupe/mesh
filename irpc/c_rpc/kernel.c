@@ -6,6 +6,8 @@
 #include <string.h>
 #include <assert.h>
 
+// see https://github.com/booksbyus/zguide/blob/master/examples/C/zhelpers.h
+// TODO: do formal link i.e. #include <zhelpers.h>
 //  Convert C string to 0MQ string and send to socket
 static int
 s_send (void *socket, char *string) {
@@ -46,7 +48,7 @@ int main (void)
     zmq_connect (worker_req, "tcp://localhost:5568");
 
     while (1) {
-        char msg [256];
+        char *msg;
         // polling http://zguide.zeromq.org/page:all#Handling-Multiple-Sockets
         zmq_pollitem_t items [] = {
             { health, 0, ZMQ_POLLIN, 0 },
@@ -54,14 +56,14 @@ int main (void)
         };
         zmq_poll (items, 2, -1);
         if (items[0].revents & ZMQ_POLLIN) {
-            int size = zmq_recv (health, msg, 255, 0);
-            if (size != -1) {
-                s_send (health, "OK");
+            msg = s_recv (health);
+            if (msg) {
+                s_send(health, "OK");
             }
         }
         if (items[1].revents & ZMQ_POLLIN) {
-            int size = zmq_recv (worker_rep, msg, 255, 0);
-            if (size != -1) {
+            msg = s_recv (worker_rep);
+            if (msg) {
                 s_send (worker_rep, "OK");
             }
         }
