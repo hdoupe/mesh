@@ -4,6 +4,7 @@ import time
 import zmq
 import msgpack
 
+
 def health_check(health_socket):
     health_socket.send(b'')
     return health_socket.recv() == b'OK'
@@ -73,8 +74,12 @@ def get(socket, poller, job_id):
 def test():
     (context, health, submit_job, get_job, poller) = get_sockets()
     try:
+        print('healthy')
         assert health_check(health)
+        print('packing')
         send_msgpack(submit_job, {'test': '12'})
+        msg = submit_job.recv()
+        print(f'pack got: {msg}')
     except KeyboardInterrupt:
         print('W: interupt received, stopping')
     finally:
@@ -101,5 +106,4 @@ if __name__ == '__main__':
     # ]
     # result = run_endpoint(endpoint, args)
     # print(result)
-
     test()
