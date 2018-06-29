@@ -4,11 +4,18 @@ ctxt <- init.context()
 socket <- init.socket(ctxt, "ZMQ_REP")
 bind.socket(socket, "tcp://*:5555")
 
-while (TRUE) {
-  cat("Client command:  ")
-  msg <- unpackMsg(receive.socket(socket, unserialize = FALSE))
-
-  cat(msg, "\n")
-  send.socket(socket, packMsg("Message received!"), serialize = FALSE)
+individual <- function (x) {
+  x + 5
 }
 
+corporate <- function (x) {
+  x + 7
+}
+
+while (TRUE) {
+  cat("Client command:  ")
+  req <- unpackMsg(receive.socket(socket, unserialize = FALSE), simplify = FALSE)
+
+  rep <- packMsg(do.call(req[["endpoint"]], req[["contents"]]))
+  send.socket(socket, rep, serialize = FALSE)
+}
