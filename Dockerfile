@@ -2,6 +2,14 @@ FROM zeromqorg/czmq
 
 USER root
 
+#install msgpack
+RUN git clone https://github.com/msgpack/msgpack-c.git
+RUN cd msgpack-c/ && \
+    cmake . && \
+    make && \
+    make install
+
+
 EXPOSE 5555
 
 RUN mkdir /home/irpc
