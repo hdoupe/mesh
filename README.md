@@ -11,7 +11,7 @@ Terminal window 2:
 - C- Test via:
 
 Terminal window 1:
-`docker run -p 5566:5566 -it opensourcepolicycenter/irpc /bin/bash`
+`docker run -p 5566:5566 -p 5567:5567 -it opensourcepolicycenter/irpc /bin/bash`
 
 In container run:
 ```
