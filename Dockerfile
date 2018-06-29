@@ -10,7 +10,8 @@ RUN cd msgpack-c/ && \
     make install
 
 
-EXPOSE 5555
+EXPOSE 5566
+EXPOSE 5567
 
 RUN mkdir /home/irpc
 
