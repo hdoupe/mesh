@@ -53,6 +53,7 @@ def handler(m_bytes, socket):
 def start_mq():
     try:
         context = zmq.Context()
+
         health = context.socket(zmq.REP)
         health.bind("tcp://*:5556")
 

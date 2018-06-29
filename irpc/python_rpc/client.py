@@ -4,14 +4,14 @@ import time
 import zmq
 import msgpack
 
-CONTEXT = zmq.Context()
-
 def health_check(health_socket):
     health_socket.send(b'')
     return health_socket.recv() == b'OK'
 
-def get_sockets():
-    context = zmq.Context()
+def get_sockets(context=None):
+    if context is None:
+        context = zmq.Context()
+
     health = context.socket(zmq.REQ)
     health.connect("tcp://localhost:5556")
 
