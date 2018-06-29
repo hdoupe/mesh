@@ -20,4 +20,4 @@ gcc kernel.c -o kernel -lczmq -lzmq
 ```
 
 Terminal window 2:
-`python helloworld.py`
+`python python_rpc/client.py`
