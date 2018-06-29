@@ -15,7 +15,7 @@ socket = context.socket(zmq.REQ)
 socket.connect("tcp://localhost:5555")
 
 requests = [{"endpoint": "individual", "contents": [2]},
-            {"endpoint": "corporate", "contents": [3]}]
+            {"endpoint": "corporate", "contents": [3, 4]}]
 
 #  Do 10 requests, waiting each time for a response
 for request in requests:
