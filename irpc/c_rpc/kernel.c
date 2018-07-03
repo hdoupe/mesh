@@ -1,13 +1,23 @@
 //  Hello World server
 
 #include <zmq.h>
+#include <cjson/cJSON.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
 
+
+struct params {
+    char *mtr_wrt_group;
+    char *file_name;
+};
+
 static int s_send (void *socket, char *string);
 static char *s_recv (void *socket);
+int parse_params(struct params *input, const char * const params);
+
 
 int main (void)
 {
@@ -43,6 +53,13 @@ int main (void)
             msg = s_recv (worker_rep);
             if (msg) {
                 s_send (worker_rep, "OK");
+                struct params input;
+                int status = parse_params (&input, msg);
+                if (status != 0) {
+                    printf("Bad JSON input: %s\n", msg);
+                } else {
+                    printf("doing work... %s %s\n", input.mtr_wrt_group, input.file_name);
+                }
             }
         }
     }
@@ -74,4 +91,39 @@ s_recv (void *socket) {
         size = 255;
     buffer [size] = 0;
     return strdup (buffer);
+}
+
+
+int parse_params(struct params *input, const char * const params)
+{
+    cJSON *json_obj = cJSON_Parse(params);
+    if (json_obj == NULL)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        cJSON_Delete(json_obj);
+        return 1;
+    }
+
+    cJSON *mtr_wrt_group = cJSON_GetObjectItemCaseSensitive(json_obj, "mtr_wrt_group");
+    cJSON *file_name = cJSON_GetObjectItemCaseSensitive(json_obj, "file_name");
+
+    // we are expecting strings
+    if (!cJSON_IsString(mtr_wrt_group) || !cJSON_IsString(file_name)) {
+        printf("\"mtr_wrt_group\" and \"file_name\" should be strings\n");
+        cJSON_Delete(json_obj);
+        return 1;
+    }
+
+    // allocate memory to struct fields and copy data to them
+    input->mtr_wrt_group = malloc(strlen(mtr_wrt_group->valuestring) + 1);
+    input->file_name = malloc(strlen(file_name->valuestring) + 1);
+    strcpy(input->mtr_wrt_group, mtr_wrt_group->valuestring);
+    strcpy(input->file_name, file_name->valuestring);
+
+    cJSON_Delete(json_obj);
+    return 0;
 }

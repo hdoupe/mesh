@@ -77,7 +77,7 @@ def test():
         print('healthy')
         assert health_check(health)
         print('packing')
-        send_msgpack(submit_job, {'test': '12'})
+        submit_job.send(b"{\"mtr_wrt_group\": \"full\", \"file_name\": \"taxsimrun.txt\"}")
         msg = submit_job.recv()
         print(f'pack got: {msg}')
     except KeyboardInterrupt:
