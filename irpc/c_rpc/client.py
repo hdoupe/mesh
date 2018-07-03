@@ -1,5 +1,5 @@
 import uuid
-import time
+import json
 
 import zmq
 import msgpack
@@ -42,6 +42,16 @@ def receive_msgpack(socket, flags=0):
     return msgpack.loads(received, encoding='utf8', use_list=True)
 
 
+def send_json(socket, obj, flags=0):
+    serialized = json.dumps(obj).encode('utf-8')
+    return socket.send(serialized, flags=flags)
+
+
+def receive_json(socket, flags=0):
+    received = socket.recv(flags)
+    return json.loads(received.decode('utf-8'))
+
+
 def submit(socket, endpoint, args):
     job_id = str(uuid.uuid4())
     data = {'job_id': job_id,
@@ -77,7 +87,8 @@ def test():
         print('healthy')
         assert health_check(health)
         print('packing')
-        submit_job.send(b"{\"mtr_wrt_group\": \"full\", \"file_name\": \"taxsimrun.txt\"}")
+        send_json(submit_job,
+                  {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'})
         msg = submit_job.recv()
         print(f'pack got: {msg}')
     except KeyboardInterrupt:
