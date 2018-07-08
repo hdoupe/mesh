@@ -9,13 +9,15 @@ WORKDIR /home
 
 RUN mkdir /home/taxsim
 
-COPY ./testfortran.for /home/taxsim
 COPY ./taxsimlink.c /home/taxsim
+#COPY ./taxsim9.for /home/taxsim
+COPY ./testfortran.for /home/taxsim
 
 WORKDIR /home/taxsim
 
 RUN gcc -c taxsimlink.c -o taxsimlink.o
-# RUN gfortran -c taxsim9.for -o taxsim9_mod.o
-RUN gfortran -c testfortran.for -o testfortran.o
 
-CMD ["/bin/bash"]
+#RUN gfortran taxsimlink.o taxsim9.for -o linked
+RUN gfortran taxsimlink.o testfortran.for -o linked
+
+CMD ["./linked"]
