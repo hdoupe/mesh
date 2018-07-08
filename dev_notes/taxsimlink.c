@@ -4,6 +4,7 @@ extern void runmodel(char [], int);
 
 int main(){
     char fname[] = "data.txt";
-    runmodel(fname, sizeof(fname)/sizeof(fname[0]));
+    int fnamesize = sizeof(fname)/sizeof(fname[0]);
+    runmodel(fname, fnamesize);
     return 0;
 }
