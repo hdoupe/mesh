@@ -12,7 +12,8 @@ RUN mkdir /home/taxsim
 COPY ./taxsimlink.c /home/taxsim
 #COPY ./taxsim9.for /home/taxsim
 COPY ./testfortran.for /home/taxsim
-COPY ./docker-command.txt /home/taxsim
+
+COPY ./data.txt /home/taxsim
 
 WORKDIR /home/taxsim
 
