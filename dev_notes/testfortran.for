@@ -6,7 +6,8 @@ c format to * for f2c.
       implicit none
 C      character*64 fname
       contains
-      subroutine runmodel(c_fname, fnamesize, c_arg, argsize) bind (C)
+      subroutine runmodel(c_fname, fnamesize, c_arg, argsize,
+     + c_buffer, buffersize) bind (C)
       use iso_c_binding, only: C_CHAR, c_null_char
       integer :: i
       integer(c_int), value :: fnamesize
@@ -15,12 +16,18 @@ C      character*64 fname
       integer(c_int), value :: argsize
       character(kind = c_char) :: c_arg(argsize)
       character(:), allocatable :: arg
+      integer(c_int), value :: buffersize
+      character(kind = c_char) :: c_buffer(buffersize)
 
       allocate(character(fnamesize) :: fname)
       allocate(character(argsize) :: arg)
 
       forall (i = 1:fnamesize) fname(i:i) = c_fname(i)
       forall (i = 1:argsize) arg(i:i) = c_arg(i)
+
+      buffer(1) = "h"
+      buffer(2) = "e"
+      buffer(3) = "y"
 
       print*, 'hey there', fname, arg
       open(0,file=fname, status='old')
