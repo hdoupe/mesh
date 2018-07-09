@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-extern void runmodel(char [], int, char [], int);
+extern void runmodel(char *, int, char [], int);
 
 int main(){
     char fname[] = "data.txt";
