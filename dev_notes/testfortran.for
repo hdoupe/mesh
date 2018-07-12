@@ -17,7 +17,8 @@ C      character*64 fname
       character(kind = c_char) :: c_arg(argsize)
       character(:), allocatable :: arg
       integer(c_int), value :: buffersize
-      character(kind = c_char) :: c_buffer(buffersize)
+      character(kind = c_char), intent(out) :: c_buffer(buffersize)
+      character(len=buffersize) :: fbuffer
 
       allocate(character(fnamesize) :: fname)
       allocate(character(argsize) :: arg)
@@ -25,9 +26,11 @@ C      character*64 fname
       forall (i = 1:fnamesize) fname(i:i) = c_fname(i)
       forall (i = 1:argsize) arg(i:i) = c_arg(i)
 
-      buffer(1) = "h"
-      buffer(2) = "e"
-      buffer(3) = "y"
+      fbuffer = "hellothere"//c_null_char
+      do i = 1, len_trim(fbuffer)
+          print *, i, c_buffer
+          c_buffer(i) = fbuffer(i:i)
+      end do
 
       print*, 'hey there', fname, arg
       open(0,file=fname, status='old')

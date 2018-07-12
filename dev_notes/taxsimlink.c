@@ -7,7 +7,7 @@ int main(){
     int fnamesize = sizeof(fname)/sizeof(fname[0]);
     char arg[] = "full";
     int argsize = sizeof(arg)/sizeof(arg[0]);
-    char buffer[] = "bye";
+    char buffer[] = "hello there friend";
     int buffersize = sizeof(buffer)/sizeof(buffer[0]);
     runmodel(fname, fnamesize, arg, argsize, buffer, buffersize);
     printf("got result %s\n", buffer);
