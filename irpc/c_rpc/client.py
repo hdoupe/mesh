@@ -16,10 +16,10 @@ def get_sockets(context=None, health_port='5566', submit_job_port='5567',
         context = zmq.Context()
 
     health = context.socket(zmq.REQ)
-    health.connect(f"tcp://localhost:{health_port}")
+    health.connect(f"tcp://127.0.0.1:{health_port}")
 
     submit_job = context.socket(zmq.REQ)
-    submit_job.connect(f"tcp://localhost:{submit_job_port}")
+    submit_job.connect(f"tcp://127.0.0.1:{submit_job_port}")
 
     get_job = context.socket(zmq.REP)
     get_job.bind(f"tcp://*:{get_job_port}")
@@ -63,14 +63,16 @@ def submit(socket, endpoint, args):
     return job_id
 
 
-def get(socket, poller, job_id):
+def get(socket, poller, job_id, receive_func=receive_json):
     message = None
     result = None
     status = 'PENDING'
     while status == 'PENDING':
+        print('polling...')
         socks = dict(poller.poll())
+        print("socks: ", socks)
         if socket in socks:
-            message = receive_msgpack(socket)
+            message = receive_func(socket)
             print(f'received message: {message}')
             socket.send(b'OK')
             if message['job_id'] == job_id:
@@ -91,6 +93,7 @@ def test():
                   {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'})
         msg = submit_job.recv()
         print(f'pack got: {msg}')
+        get(get_job, poller, 1)
     except KeyboardInterrupt:
         print('W: interupt received, stopping')
     finally:

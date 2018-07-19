@@ -17,7 +17,8 @@ struct params {
 static int s_send (void *socket, char *string);
 static char *s_recv (void *socket);
 int parse_params(struct params *input, const char * const params);
-
+int taxsimrun(char *, void *socket);
+// extern void runmodel(char [], int, char [], int, char [], int, char *, int);
 
 int main (void)
 {
@@ -33,7 +34,9 @@ int main (void)
     assert (rc == 0);
 
     void *worker_req = zmq_socket (context, ZMQ_REQ);
-    zmq_connect (worker_req, "tcp://localhost:5568");
+    // host.docker.internal is necessary for macs
+    // this should be changed to localhost to be more portable
+    zmq_connect (worker_req, "tcp://host.docker.internal:5568");
 
     while (1) {
         char *msg;
@@ -53,13 +56,7 @@ int main (void)
             msg = s_recv (worker_rep);
             if (msg) {
                 s_send (worker_rep, "OK");
-                struct params input;
-                int status = parse_params (&input, msg);
-                if (status != 0) {
-                    printf("Bad JSON input: %s\n", msg);
-                } else {
-                    printf("doing work... %s %s\n", input.mtr_wrt_group, input.file_name);
-                }
+                taxsimrun(msg, worker_req);
             }
         }
     }
@@ -74,6 +71,7 @@ int main (void)
 //  Convert C string to 0MQ string and send to socket
 static int
 s_send (void *socket, char *string) {
+    printf("sending message: %s\n", string);
     int size = zmq_send (socket, string, strlen (string), 0);
     return size;
 }
@@ -93,6 +91,46 @@ s_recv (void *socket) {
     return strdup (buffer);
 }
 
+int taxsimrun(char *msg, void* socket){
+    printf("starting taxsim run\n");
+    char *out = "{\"job_id\": 1, \"status\": \"PENDING\", \"result\": false}";
+    s_send(socket, out);
+    printf("received: %s\n", s_recv(socket));
+    sleep(4);
+    char *out2 = "{\"job_id\": 1, \"status\": \"SUCCESS\", \"result\": \"hey there\"}";
+    s_send(socket, out2);
+    printf("received: %s\n", s_recv(socket));
+    // struct params input;
+    // int status = parse_params (&input, msg);
+    // if (status != 0) {
+    //     printf("Bad JSON input: %s\n", msg);
+    //     s_send (socket, "Bad JSON input\n");
+    //     return 1;
+    // }
+    // char *mname = "out.msg";
+    // int fnamesize = strlen(input.fname) + 1;
+    // int argsize = strlen(input.input_wrt_group) + 1;
+    // int mnamesize = strlen(mname) + 1;
+    //
+    // int buffersize = 20000000;
+    // char *buffer;
+    // buffer = (char*) malloc(sizeof(char)*buffersize);
+    // if (buffer == NULL){
+    //     printf("buffer is null\n");
+    //     s_send(socket, "Failed to allocate sufficient memory");
+    //     return 1;
+    // }
+    //
+    // printf("calling taxsim...\n");
+    // runmodel(input.fname, fnamesize, mname, mnamesize, input.mtr_wrt_group,
+    //          argsize, buffer, buffersize);
+    //
+    // printf("we\'re back\n");
+    // printf("got result: %s\n", buffer);
+
+    return 0;
+
+}
 
 int parse_params(struct params *input, const char * const params)
 {
