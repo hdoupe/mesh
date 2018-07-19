@@ -17,8 +17,9 @@ C      character*64 fname
       character(kind = c_char) :: c_arg(argsize)
       character(:), allocatable :: arg
       integer(c_int), value :: buffersize
-      character(kind = c_char), intent(out) :: c_buffer(buffersize)
+      character(kind = c_char) :: c_buffer(buffersize)
       character(len=buffersize) :: fbuffer
+
 
       allocate(character(fnamesize) :: fname)
       allocate(character(argsize) :: arg)
