@@ -93,7 +93,7 @@ def test():
                   {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'})
         msg = submit_job.recv()
         print(f'pack got: {msg}')
-        get(get_job, poller, 1)
+        get(get_job, poller, "1")
     except KeyboardInterrupt:
         print('W: interupt received, stopping')
     finally:
