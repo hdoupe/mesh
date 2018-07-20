@@ -9,6 +9,12 @@
 #include <assert.h>
 
 
+struct message {
+    char *job_id;
+    char *endpoint;
+    char *params_str;
+};
+
 struct params {
     char *mtr_wrt_group;
     char *file_name;
@@ -16,9 +22,10 @@ struct params {
 
 static int s_send (void *socket, char *string);
 static char *s_recv (void *socket);
-int parse_params(struct params *input, const char * const params);
+int parse_status(struct message *m, const char * const m_str);
 int json_status(char **, char *, char *, char *);
 int taxsimrun(char *, void *socket);
+int parse_taxsim_params(struct params *input, const char * const params);
 extern void runmodel(char *, int, char *, int, char *, int, char *, int);
 
 int main (void)
@@ -56,7 +63,16 @@ int main (void)
             msg = s_recv (worker_rep);
             if (msg) {
                 s_send (worker_rep, "OK");
-                taxsimrun(msg, worker_req);
+                struct message m;
+                struct params p;
+                parse_status(&m, msg);
+                printf("job_id: %s\n", m.job_id);
+                printf("endpoint: %s\n", m.endpoint);
+                printf("params: %s\n", m.params_str);
+                parse_taxsim_params(&p, m.params_str);
+                printf("m.mtr_wrt_group: %s\n", p.mtr_wrt_group);
+                printf("m.file_name: %s\n", p.file_name);
+                // taxsimrun(msg, worker_req);
             }
         }
     }
@@ -100,7 +116,7 @@ int taxsimrun(char *msg, void* socket){
 
 
     struct params input;
-    int status = parse_params (&input, msg);
+    int status = parse_taxsim_params (&input, msg);
     if (status != 0) {
         printf("Bad JSON input: %s\n", msg);
         char *error_msg;
@@ -146,7 +162,41 @@ int taxsimrun(char *msg, void* socket){
 
 }
 
-int parse_params(struct params *input, const char * const params)
+
+int parse_status(struct message *m, const char * const m_str) {
+    cJSON *json_obj = cJSON_Parse (m_str);
+    if (json_obj == NULL)
+    {
+        printf("null json_obj\n");
+        const char *error_ptr = cJSON_GetErrorPtr ();
+        if (error_ptr != NULL)
+        {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        cJSON_Delete (json_obj);
+        return 1;
+    }
+    cJSON *job_id = cJSON_GetObjectItemCaseSensitive (json_obj, "job_id");
+    cJSON *endpoint = cJSON_GetObjectItemCaseSensitive (json_obj, "endpoint");
+    cJSON *params_str = cJSON_GetObjectItemCaseSensitive (json_obj, "args");
+    char *tmpparam = cJSON_Print (params_str);
+
+    m->job_id = malloc (strlen (job_id->valuestring) + 1);
+    m->endpoint = malloc (strlen (endpoint->valuestring) + 1);
+    m->params_str = malloc (strlen (tmpparam) + 1);
+    strcpy (m->job_id, job_id->valuestring);
+    strcpy (m->endpoint, endpoint->valuestring);
+    strcpy (m->params_str, tmpparam);
+
+    printf("params_str: %s\n", m->params_str);
+
+    cJSON_Delete (json_obj);
+    free (tmpparam);
+    return 0;
+}
+
+
+int parse_taxsim_params(struct params *input, const char * const params)
 {
     cJSON *json_obj = cJSON_Parse(params);
     if (json_obj == NULL)
@@ -162,13 +212,6 @@ int parse_params(struct params *input, const char * const params)
 
     cJSON *mtr_wrt_group = cJSON_GetObjectItemCaseSensitive(json_obj, "mtr_wrt_group");
     cJSON *file_name = cJSON_GetObjectItemCaseSensitive(json_obj, "file_name");
-
-    // we are expecting strings
-    if (!cJSON_IsString(mtr_wrt_group) || !cJSON_IsString(file_name)) {
-        printf("\"mtr_wrt_group\" and \"file_name\" should be strings\n");
-        cJSON_Delete(json_obj);
-        return 1;
-    }
 
     // allocate memory to struct fields and copy data to them
     input->mtr_wrt_group = malloc(strlen(mtr_wrt_group->valuestring) + 1);

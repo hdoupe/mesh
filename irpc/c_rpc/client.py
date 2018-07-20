@@ -89,11 +89,13 @@ def test():
         print('healthy')
         assert health_check(health)
         print('packing')
+        p = {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'}
+
         send_json(submit_job,
-                  {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'})
+                  {'job_id': '1', 'endpoint': 'taxsim', 'args': p})
         msg = submit_job.recv()
         print(f'pack got: {msg}')
-        get(get_job, poller, "1")
+        # get(get_job, poller, "1")
     except KeyboardInterrupt:
         print('W: interupt received, stopping')
     finally:
