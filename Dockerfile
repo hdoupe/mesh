@@ -13,6 +13,7 @@ RUN cd cJSON && \
     make && \
     make install
 
+RUN apt-get update && apt-get -y install gfortran valgrind
 
 EXPOSE 5566
 EXPOSE 5567
@@ -20,13 +21,16 @@ EXPOSE 5567
 RUN mkdir /home/irpc
 
 COPY ./irpc/c_rpc/kernel.c /home/irpc
-COPY ./irpc/c_rpc/jsontest.c /home/irpc
+COPY ./taxsim/taxsim9.for /home/irpc
+COPY ./taxsim/taxsimrun.txt /home/irpc
 
 WORKDIR /home/irpc
 
 ENV LD_LIBRARY_PATH "/home/cJSON/build/"
 
-RUN gcc kernel.c -o kernel -lczmq -lzmq -lcjson
-RUN gcc jsontest.c -o jsontest -lcjson
+RUN gcc -c kernel.c -o kernel.o -g
+
+RUN gfortran kernel.o taxsim9.for -o linked -lczmq -lzmq -lcjson -g
+
 
 CMD ["/bin/bash"]
