@@ -63,7 +63,6 @@ int main (void)
             msg = s_recv (worker_rep);
             if (msg) {
                 s_send (worker_rep, "OK");
-                printf("handling...\n");
                 handler (msg, worker_req);
             }
         }
@@ -100,11 +99,8 @@ s_recv (void *socket) {
 
 int handler (char *msg, void* socket) {
     struct message m;
-    printf("parsing...\n");
     parse_status(&m, msg);
-    printf("endpoint?\n");
     if (strcmp(m.endpoint, "taxsim") == 0) {
-        printf("endpoint is taxsim...\n");
         int status = taxsimrun(m.job_id, m.params_str, socket);
         return status;
     } else {
@@ -118,13 +114,11 @@ int handler (char *msg, void* socket) {
 }
 
 int taxsimrun(char* job_id, char *msg, void* socket){
-    printf("starting taxsim run\n");
     char *pending;
     json_status (&pending, job_id, "PENDING", "");
     s_send(socket, pending);
     free (pending);
     printf("received: %s\n", s_recv(socket));
-
 
     struct params input;
     int status = parse_taxsim_params (&input, msg);
@@ -153,7 +147,6 @@ int taxsimrun(char* job_id, char *msg, void* socket){
     }
     printf("%s %s %s\n", input.file_name, input.mtr_wrt_group, mname);
 
-    printf("calling taxsim...\n");
     runmodel(input.file_name, fnamesize, mname, mnamesize, input.mtr_wrt_group,
              argsize, buffer, buffersize);
 
