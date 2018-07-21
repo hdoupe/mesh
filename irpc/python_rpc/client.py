@@ -65,3 +65,9 @@ class Client():
         self.sub_sock.close()
         self.get_sock.close()
         self.context.term()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
