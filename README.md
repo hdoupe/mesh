@@ -8,11 +8,13 @@ Terminal window 1:
 Terminal window 2:
 `python client.py`
 
-- C- Test via:
+- C- Test via*:
 
 Build and Start C kernel:
-`docker build -t taxsimlink ./`
-`docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked`
+```
+docker build -t taxsimlink ./
+docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked
+```
 
 Post jobs to kernel:
 ```
@@ -30,3 +32,5 @@ with Client(health_port='5566', submit_job_port='5567',
     print(result)
 
 ```
+
+\* email me if interested in the taxsim9.for and taxsimrun.txt files
