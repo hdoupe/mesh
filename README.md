@@ -1,6 +1,6 @@
 # I-Remote-Procedure-Call
 
-- Python- Test via:
+- Python- Test via [out of date]:
 
 Terminal window 1:
 `python kernel.py`
@@ -10,14 +10,25 @@ Terminal window 2:
 
 - C- Test via:
 
-Terminal window 1:
-`docker run -p 5566:5566 -p 5567:5567 -it opensourcepolicycenter/irpc /bin/bash`
+Build and Start C kernel:
+`docker build -t taxsimlink ./`
+`docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked`
 
-In container run:
+Post jobs to kernel:
 ```
-gcc kernel.c -o kernel -lczmq -lzmq
-./kernel
-```
+from client import Client
+from serializers import receive_json, send_json
 
-Terminal window 2:
-`python python_rpc/client.py`
+
+args = {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'}
+endpoint = 'taxsim'
+
+try:
+    client = Client(health_port='5566', submit_job_port='5567',
+                    get_job_port='5568')
+    job_id = client.submit(endpoint, args, send_func=send_json)
+    result = client.get(job_id, receive_func=receive_json)
+    print(result)
+finally:
+    client.close()
+```
