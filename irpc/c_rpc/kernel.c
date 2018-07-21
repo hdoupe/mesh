@@ -24,7 +24,7 @@ static int s_send (void *socket, char *string);
 static char *s_recv (void *socket);
 int parse_status(struct message *m, const char * const m_str);
 int json_status(char **, char *, char *, char *);
-int taxsimrun(char *, void *socket);
+int taxsimrun(char *, char *, void *socket);
 int parse_taxsim_params(struct params *input, const char * const params);
 extern void runmodel(char *, int, char *, int, char *, int, char *, int);
 
@@ -63,16 +63,8 @@ int main (void)
             msg = s_recv (worker_rep);
             if (msg) {
                 s_send (worker_rep, "OK");
-                struct message m;
-                struct params p;
-                parse_status(&m, msg);
-                printf("job_id: %s\n", m.job_id);
-                printf("endpoint: %s\n", m.endpoint);
-                printf("params: %s\n", m.params_str);
-                parse_taxsim_params(&p, m.params_str);
-                printf("m.mtr_wrt_group: %s\n", p.mtr_wrt_group);
-                printf("m.file_name: %s\n", p.file_name);
-                // taxsimrun(msg, worker_req);
+                printf("handling...\n");
+                handler (msg, worker_req);
             }
         }
     }
@@ -106,10 +98,29 @@ s_recv (void *socket) {
     return strdup (buffer);
 }
 
-int taxsimrun(char *msg, void* socket){
+int handler (char *msg, void* socket) {
+    struct message m;
+    printf("parsing...\n");
+    parse_status(&m, msg);
+    printf("endpoint?\n");
+    if (strcmp(m.endpoint, "taxsim") == 0) {
+        printf("endpoint is taxsim...\n");
+        int status = taxsimrun(m.job_id, m.params_str, socket);
+        return status;
+    } else {
+        char *error_msg;
+        json_status (&error_msg, m.job_id, "FAILURE", "Endpoint doesn\'t exist");
+        s_send(socket, error_msg);
+        free (error_msg);
+        return 1;
+    }
+    return 0;
+}
+
+int taxsimrun(char* job_id, char *msg, void* socket){
     printf("starting taxsim run\n");
     char *pending;
-    json_status (&pending, "1", "PENDING", "");
+    json_status (&pending, job_id, "PENDING", "");
     s_send(socket, pending);
     free (pending);
     printf("received: %s\n", s_recv(socket));
@@ -120,7 +131,7 @@ int taxsimrun(char *msg, void* socket){
     if (status != 0) {
         printf("Bad JSON input: %s\n", msg);
         char *error_msg;
-        json_status (&error_msg, "1", "FAILURE", "Failed to allocate sufficient memory");
+        json_status (&error_msg, job_id, "FAILURE", "Failed to allocate sufficient memory");
         s_send(socket, error_msg);
         free (error_msg);
         return 1;
@@ -135,7 +146,7 @@ int taxsimrun(char *msg, void* socket){
     buffer = (char*) malloc(sizeof(char)*buffersize);
     if (buffer == NULL){
         char *error_msg;
-        json_status (&error_msg, "1", "FAILURE", "Failed to allocate sufficient memory");
+        json_status (&error_msg, job_id, "FAILURE", "Failed to allocate sufficient memory");
         s_send(socket, error_msg);
         free (error_msg);
         return 1;
@@ -147,9 +158,9 @@ int taxsimrun(char *msg, void* socket){
              argsize, buffer, buffersize);
 
     char *json_str;
-    if (json_status (&json_str, "1", "SUCCESS", buffer) == 1){
+    if (json_status (&json_str, job_id, "SUCCESS", buffer) == 1){
         char *error_msg;
-        json_status (&error_msg, "1", "FAILURE", "Bad JSON");
+        json_status (&error_msg, job_id, "FAILURE", "Bad JSON");
         s_send (socket, error_msg);
         return 1;
     }
@@ -164,6 +175,7 @@ int taxsimrun(char *msg, void* socket){
 
 
 int parse_status(struct message *m, const char * const m_str) {
+    printf("parsing message: %s\n", m_str);
     cJSON *json_obj = cJSON_Parse (m_str);
     if (json_obj == NULL)
     {
@@ -225,7 +237,7 @@ int parse_taxsim_params(struct params *input, const char * const params)
 
 int json_status(char **json_str, char *job_id, char *status, char *result){
     cJSON *res = cJSON_CreateObject();
-    if (cJSON_AddStringToObject(res, "job_id", "1") == NULL){
+    if (cJSON_AddStringToObject(res, "job_id", job_id) == NULL){
         return 1;
     }
     if (cJSON_AddStringToObject(res, "status", status) == NULL){

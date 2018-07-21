@@ -5,6 +5,7 @@ import msgpack
 
 ##############################################################################
 
+
 def taxcalc_endpoint(year_n, start_year, use_puf_not_cps, use_full_sample,
                      user_mods):
     import taxcalc
