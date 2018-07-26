@@ -22,7 +22,7 @@ RUN mkdir /home/irpc
 
 COPY ./irpc/c_rpc/kernel.c /home/irpc
 COPY ./taxsim/taxsim9.for /home/irpc
-COPY ./taxsim/taxsimrun.txt /home/irpc
+COPY ./taxsim/data/puf_taxsim.txt /home/irpc
 
 WORKDIR /home/irpc
 
