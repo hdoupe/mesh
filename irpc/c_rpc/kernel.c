@@ -134,8 +134,8 @@ int taxsimrun(char* job_id, char *msg, void* socket){
     int fnamesize = strlen(input.file_name) + 1;
     int argsize = strlen(input.mtr_wrt_group) + 1;
     int mnamesize = strlen(mname) + 1;
-
-    int buffersize = 20000000;
+    // allocate all memory up front. it would be better do this dynamically
+    int buffersize = 60000000;
     char *buffer;
     buffer = (char*) malloc(sizeof(char)*buffersize);
     if (buffer == NULL){
