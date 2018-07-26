@@ -2,7 +2,7 @@ from client import Client
 from serializers import receive_json, send_json
 
 
-args = {'mtr_wrt_group': 'full', 'file_name': 'taxsimrun.txt'}
+args = {'mtr_wrt_group': 'full', 'file_name': 'puf_taxsim.txt'}
 endpoint = 'taxsim'
 
 with Client(health_port='5566', submit_job_port='5567',
@@ -10,3 +10,6 @@ with Client(health_port='5566', submit_job_port='5567',
     job_id = client.submit(endpoint, args, send_func=send_json)
     result = client.get(job_id, receive_func=receive_json)
     print(result)
+
+    with open('../../taxsim/tests/results/kernel_puf.txt', 'w') as f:
+        f.write(result)
