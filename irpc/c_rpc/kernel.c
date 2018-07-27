@@ -67,6 +67,7 @@ int main (void)
             }
         }
     }
+    zmq_close (health);
     zmq_close (worker_rep);
     zmq_close (worker_req);
     zmq_ctx_destroy (context);
