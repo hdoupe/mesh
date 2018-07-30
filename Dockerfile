@@ -13,7 +13,7 @@ RUN cd cJSON && \
     make && \
     make install
 
-RUN apt-get update && apt-get -y install gfortran valgrind
+RUN apt-get update && apt-get -y install gcc gfortran valgrind
 
 EXPOSE 5566
 EXPOSE 5567
@@ -22,7 +22,12 @@ RUN mkdir /home/irpc
 
 COPY ./irpc/c_rpc/kernel.c /home/irpc
 COPY ./taxsim/taxsim9.for /home/irpc
+COPY ./taxsim/taxsim9_unmodified.for /home/irpc
+
 COPY ./taxsim/data/puf_taxsim.txt /home/irpc
+COPY ./taxsim/data/puf_taxsim_small.txt /home/irpc
+COPY ./taxsim/data/puf_taxsim_state.txt /home/irpc
+COPY ./taxsim/data/puf_taxsim_state_small.txt /home/irpc
 
 WORKDIR /home/irpc
 
@@ -32,5 +37,6 @@ RUN gcc -c kernel.c -o kernel.o -g
 
 RUN gfortran kernel.o taxsim9.for -o linked -lczmq -lzmq -lcjson -g
 
+RUN gfortran taxsim9_unmodified.for -o taxsim9_unmod
 
 CMD ["/bin/bash"]
