@@ -33,7 +33,7 @@ class Client():
         data = {'job_id': job_id,
                 'endpoint': endpoint,
                 'args': args}
-        print('submitting data', data)
+        # print('submitting data', data)
         send_func(self.sub_sock, data)
         assert self.sub_sock.recv() == b'OK'
         return job_id
@@ -46,7 +46,7 @@ class Client():
             socks = dict(self.poller.poll())
             if self.get_sock in socks:
                 message = receive_func(self.get_sock)
-                print(f'received message: {message}')
+                print(f"received message {message['job_id']}: {message['status']}")
                 self.get_sock.send(b'OK')
                 if message['job_id'] == job_id:
                     status = message['status']
