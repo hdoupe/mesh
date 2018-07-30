@@ -26,7 +26,7 @@ int parse_status(struct message *m, const char * const m_str);
 int json_status(char **, char *, char *, char *);
 int taxsimrun(char *, char *, void *socket);
 int parse_taxsim_params(struct params *input, const char * const params);
-extern void runmodel(char *, int, char *, int, char *, int, char *, int);
+extern void runmodel(char *, int, char *, int, char *, int);
 
 int main (void)
 {
@@ -131,10 +131,8 @@ int taxsimrun(char* job_id, char *msg, void* socket){
         free (error_msg);
         return 1;
     }
-    char *mname = "out.msg";
     int fnamesize = strlen(input.file_name) + 1;
     int argsize = strlen(input.mtr_wrt_group) + 1;
-    int mnamesize = strlen(mname) + 1;
     // allocate all memory up front. it would be better do this dynamically
     int buffersize = 60000000;
     char *buffer;
@@ -146,9 +144,9 @@ int taxsimrun(char* job_id, char *msg, void* socket){
         free (error_msg);
         return 1;
     }
-    printf("%s %s %s\n", input.file_name, input.mtr_wrt_group, mname);
+    printf("%s %s\n", input.file_name, input.mtr_wrt_group);
 
-    runmodel(input.file_name, fnamesize, mname, mnamesize, input.mtr_wrt_group,
+    runmodel(input.file_name, fnamesize, input.mtr_wrt_group,
              argsize, buffer, buffersize);
 
     char *json_str;
