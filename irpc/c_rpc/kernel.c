@@ -66,6 +66,7 @@ int main (void)
                 handler (msg, worker_req);
             }
         }
+        free(msg);
     }
     zmq_close (health);
     zmq_close (worker_rep);
@@ -88,14 +89,17 @@ s_send (void *socket, char *string) {
 //  Chops string at 255 chars, if it's longer
 static char *
 s_recv (void *socket) {
-    char buffer [256];
-    int size = zmq_recv (socket, buffer, 255, 0);
+    int buffersize = 40000000;
+    char* buffer = malloc(sizeof(char) * buffersize);
+    int size = zmq_recv (socket, buffer, buffersize, 0);
     if (size == -1)
         return NULL;
-    if (size > 255)
-        size = 255;
+    if (size > buffersize)
+        return NULL;
     buffer [size] = 0;
-    return strdup (buffer);
+    char* bptr = strdup (buffer);
+    free(buffer);
+    return bptr;
 }
 
 int handler (char *msg, void* socket) {
@@ -144,7 +148,6 @@ int taxsimrun(char* job_id, char *msg, void* socket){
         free (error_msg);
         return 1;
     }
-    printf("%s %s\n", input.file_name, input.mtr_wrt_group);
 
     runmodel(input.file_name, fnamesize, input.mtr_wrt_group,
              argsize, buffer, buffersize);
@@ -167,7 +170,6 @@ int taxsimrun(char* job_id, char *msg, void* socket){
 
 
 int parse_status(struct message *m, const char * const m_str) {
-    printf("parsing message: %s\n", m_str);
     cJSON *json_obj = cJSON_Parse (m_str);
     if (json_obj == NULL)
     {
@@ -191,8 +193,6 @@ int parse_status(struct message *m, const char * const m_str) {
     strcpy (m->job_id, job_id->valuestring);
     strcpy (m->endpoint, endpoint->valuestring);
     strcpy (m->params_str, tmpparam);
-
-    printf("params_str: %s\n", m->params_str);
 
     cJSON_Delete (json_obj);
     free (tmpparam);
