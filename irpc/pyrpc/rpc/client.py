@@ -2,7 +2,7 @@ import uuid
 
 import zmq
 
-from serializers import receive_msgpack, send_msgpack
+from .serializers import receive_msgpack, send_msgpack
 
 
 class Client():
