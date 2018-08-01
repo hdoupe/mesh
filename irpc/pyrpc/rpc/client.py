@@ -36,25 +36,23 @@ class Client():
         # print('submitting data', data)
         send_func(self.sub_sock, data)
         assert self.sub_sock.recv() == b'OK'
-        return job_id
+        return {'job_id': job_id, 'status': 'PENDING', 'result': None}
 
-    def get(self, job_id, receive_func=receive_msgpack):
+    def get(self, task, receive_func=receive_msgpack):
         message = None
-        result = None
-        status = 'PENDING'
-        while status == 'PENDING':
+        while task['status'] == 'PENDING':
             socks = dict(self.poller.poll())
             if self.get_sock in socks:
                 message = receive_func(self.get_sock)
                 print(f"received message {message['job_id']}: {message['status']}")
                 self.get_sock.send(b'OK')
-                if message['job_id'] == job_id:
-                    status = message['status']
-                    result = message['result']
+                if message['job_id'] == task['job_id']:
+                    task['status'] = message['status']
+                    task['result'] = message['result']
                 else:
                     e_msg = f"received unexpected job id: {message['job_id']}"
                     raise IOError(e_msg)
-        return result
+        return task
 
     def health_check(self):
         self.health_sock.send(b'')
