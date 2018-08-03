@@ -3,16 +3,20 @@ import time
 import zmq
 import msgpack
 
+from rpc.serializers import (send_msgpack, send_json, send_pickle,
+                          receive_msgpack, receive_json, receive_pickle)
+
 ##############################################################################
 
 
 def taxcalc_endpoint(year_n, start_year, use_puf_not_cps, use_full_sample,
-                     user_mods):
+                     user_mods, return_dict):
     import taxcalc
     return taxcalc.tbi.run_nth_year_taxcalc_model(year_n, start_year,
                                                   use_puf_not_cps,
                                                   use_full_sample,
-                                                  user_mods)
+                                                  user_mods,
+                                                  return_dict)
 
 
 endpoints = {'taxcalc_endpoint': taxcalc_endpoint}
@@ -20,21 +24,10 @@ endpoints = {'taxcalc_endpoint': taxcalc_endpoint}
 
 ##############################################################################
 
-def send_msgpack(socket, obj, flags=0):
-    packed = msgpack.dumps(obj, use_bin_type=True)
-    socket.send(packed, flags=flags)
-
-
-def receive_msgpack(socket, flags=0):
-    received = socket.recv(flags)
-    return msgpack.loads(received, encoding='utf8', use_list=True)
-
-
-def handler(m_bytes, socket):
-    message = msgpack.loads(m_bytes, encoding='utf8', use_list=True)
+def handler(message, socket):
     print(f'received message: {message}')
     out = {'job_id': message['job_id'], 'status': 'PENDING', 'result': False}
-    send_msgpack(socket, out)
+    send_pickle(socket, out)
     print('waiting on response...')
     assert socket.recv() == b'OK'
     print('running job...')
@@ -47,22 +40,22 @@ def handler(m_bytes, socket):
 
     out = {'job_id': message['job_id'], 'status': status, 'result': result}
     print('publish: ', out)
-    send_msgpack(socket, out)
+    send_pickle(socket, out)
     assert socket.recv() == b'OK'
 
 
-def start_mq():
+def start_mq(health_port='5566', rep_port='5567', req_port='5568'):
     try:
         context = zmq.Context()
 
         health = context.socket(zmq.REP)
-        health.bind("tcp://*:5556")
+        health.bind(f"tcp://*:{health_port}")
 
         worker_rep = context.socket(zmq.REP)
-        worker_rep.bind("tcp://*:5557")
+        worker_rep.bind(f"tcp://*:{rep_port}")
 
         worker_req = context.socket(zmq.REQ)
-        worker_req.connect("tcp://localhost:5558")
+        worker_req.connect(f"tcp://localhost:{req_port}")
 
         poller = zmq.Poller()
         poller.register(health, zmq.POLLIN)
@@ -74,7 +67,7 @@ def start_mq():
                 health.recv()
                 health.send(b'OK')
             if worker_rep in socks:
-                message = worker_rep.recv()
+                message = receive_pickle(worker_rep)
                 worker_rep.send(b'OK')
                 handler(message, worker_req)
 
@@ -89,4 +82,9 @@ def start_mq():
 
 
 if __name__ == '__main__':
-    start_mq()
+    import sys
+    if len(sys.argv[1:]) > 1:
+        health_port, rep_port, req_port = sys.argv[1:]
+        start_mq(health_port, rep_port, req_port)
+    else:
+        start_mq()

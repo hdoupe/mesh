@@ -2,7 +2,7 @@ import uuid
 
 import zmq
 
-from .serializers import receive_msgpack, send_msgpack
+from .serializers import receive_pickle, send_pickle
 
 
 class Client():
@@ -28,7 +28,7 @@ class Client():
 
         assert self.health_check()
 
-    def submit(self, endpoint, args, send_func=send_msgpack):
+    def submit(self, endpoint, args, send_func=send_pickle):
         job_id = str(uuid.uuid4())
         data = {'job_id': job_id,
                 'endpoint': endpoint,
@@ -38,7 +38,7 @@ class Client():
         assert self.sub_sock.recv() == b'OK'
         return {'job_id': job_id, 'status': 'PENDING', 'result': None}
 
-    def get(self, task, receive_func=receive_msgpack):
+    def get(self, task, receive_func=receive_pickle):
         message = None
         while task['status'] == 'PENDING':
             socks = dict(self.poller.poll())
