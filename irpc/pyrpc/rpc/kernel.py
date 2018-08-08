@@ -1,90 +1,83 @@
-import time
-
 import zmq
-import msgpack
 
 from rpc.serializers import (send_msgpack, send_json, send_pickle,
-                          receive_msgpack, receive_json, receive_pickle)
-
-##############################################################################
+                             receive_msgpack, receive_json, receive_pickle)
 
 
-def taxcalc_endpoint(year_n, start_year, use_puf_not_cps, use_full_sample,
-                     user_mods, return_dict):
-    import taxcalc
-    return taxcalc.tbi.run_nth_year_taxcalc_model(year_n, start_year,
-                                                  use_puf_not_cps,
-                                                  use_full_sample,
-                                                  user_mods,
-                                                  return_dict)
+class Kernel():
 
+    def __init__(self, context=None, health_port='5566', rep_port='5567',
+                 req_port='5568', serializer='pickle'):
+        self.context = context or zmq.Context()
+        self.set_sockets(health_port, rep_port, req_port)
+        serializers = {
+            'json': (receive_json, send_json),
+            'msgpack': (receive_msgpack, send_msgpack),
+            'pickle': (receive_pickle, send_pickle),
+        }
 
-endpoints = {'taxcalc_endpoint': taxcalc_endpoint}
+        self.receive_func, self.send_func = serializers[serializer]
 
+        self.handlers = {}
 
-##############################################################################
+    def set_sockets(self, health_port, rep_port, req_port):
+        print('got ports', health_port, rep_port, req_port)
+        self.health = self.context.socket(zmq.REP)
+        self.health.bind(f"tcp://*:{health_port}")
 
-def handler(message, socket):
-    print(f'received message: {message}')
-    out = {'job_id': message['job_id'], 'status': 'PENDING', 'result': False}
-    send_pickle(socket, out)
-    print('waiting on response...')
-    assert socket.recv() == b'OK'
-    print('running job...')
-    try:
-        result = endpoints[message['endpoint']](*message['args'])
-        status = 'SUCCESS'
-    except Exception as e:
-        result = e.__str__()
-        status = 'FAILURE'
+        self.worker_rep = self.context.socket(zmq.REP)
+        self.worker_rep.bind(f"tcp://*:{rep_port}")
 
-    out = {'job_id': message['job_id'], 'status': status, 'result': result}
-    print('publish: ', out)
-    send_pickle(socket, out)
-    assert socket.recv() == b'OK'
+        self.worker_req = self.context.socket(zmq.REQ)
+        self.worker_req.connect(f"tcp://localhost:{req_port}")
 
+        self.poller = zmq.Poller()
+        self.poller.register(self.health, zmq.POLLIN)
+        self.poller.register(self.worker_rep, zmq.POLLIN)
 
-def start_mq(health_port='5566', rep_port='5567', req_port='5568'):
-    try:
-        context = zmq.Context()
+    def run(self):
+        try:
+            self._run()
+        except KeyboardInterrupt:
+            print("W: interrupt received, stopping...")
+        finally:
+            self._close()
 
-        health = context.socket(zmq.REP)
-        health.bind(f"tcp://*:{health_port}")
-
-        worker_rep = context.socket(zmq.REP)
-        worker_rep.bind(f"tcp://*:{rep_port}")
-
-        worker_req = context.socket(zmq.REQ)
-        worker_req.connect(f"tcp://localhost:{req_port}")
-
-        poller = zmq.Poller()
-        poller.register(health, zmq.POLLIN)
-        poller.register(worker_rep, zmq.POLLIN)
-
+    def _run(self):
         while True:
-            socks = dict(poller.poll())
-            if health in socks:
-                health.recv()
-                health.send(b'OK')
-            if worker_rep in socks:
-                message = receive_pickle(worker_rep)
-                worker_rep.send(b'OK')
-                handler(message, worker_req)
+            socks = dict(self.poller.poll())
+            if self.health in socks:
+                self.health.recv()
+                self.health.send(b'OK')
+            if self.worker_rep in socks:
+                message = self.receive_func(self.worker_rep)
+                self.worker_rep.send(b'OK')
+                self.handler(message)
 
-    except KeyboardInterrupt:
-        print("W: interrupt received, stopping…")
-    finally:
-        # clean up
-        health.close()
-        worker_req.close()
-        worker_rep.close()
-        context.term()
+    def _close(self):
+        socks = [self.health, self.worker_req, self.worker_rep]
+        [sock.close() for sock in socks if sock is not None]
+        if self.context is not None:
+            self.context.term()
 
+    def handler(self, message):
+        out = {'job_id': message['job_id'],
+               'status': 'PENDING',
+               'result': False}
+        self.send_func(self.worker_req, out)
+        assert self.worker_req.recv() == b'OK'
+        try:
+            if not message['endpoint'] in self.handlers:
+                assert message['endpoint'] == 'endpoint not registered'
+            result = self.handlers[message['endpoint']](*message['args'])
+            status = 'SUCCESS'
+        except Exception as e:
+            result = e.__str__()
+            status = 'FAILURE'
+        out = {'job_id': message['job_id'], 'status': status, 'result': result}
+        self.send_func(self.worker_req, out)
+        assert self.worker_req.recv() == b'OK'
 
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv[1:]) > 1:
-        health_port, rep_port, req_port = sys.argv[1:]
-        start_mq(health_port, rep_port, req_port)
-    else:
-        start_mq()
+    def register_handlers(self, new_handlers):
+        for name, func in new_handlers.items():
+            self.handlers[name] = func
