@@ -5,22 +5,12 @@ health, rep, req = 5566, 5567, 5568
 kernel_info = [
     {'name': 'taxcalc1',
      'executable': '/Users/henrydoupe/anaconda3/envs/taxcalc-dev/bin/python',
-     'module_path': 'taxcalc_kernel.py',
-     'health_sock': 5566,
-     'rep_sock': 5567,
-     'req_sock': 5568},
+     'module_path': 'taxcalc_kernel.py'},
     {'name': 'taxcalc2',
-     'executable': '/Users/henrydoupe/anaconda3/bin/python',
-     'module_path': 'taxcalc_kernel.py',
-     'health_sock': 5576,
-     'rep_sock': 5577,
-     'req_sock': 5578},
+     'module_path': 'taxcalc_kernel.py'},
     {'name': 'taxcalc3',
      'executable': '/Users/henrydoupe/anaconda3/bin/python',
-     'module_path': 'taxcalc_kernel.py',
-     'health_sock': 5586,
-     'rep_sock': 5587,
-     'req_sock': 5588}
+     'module_path': 'taxcalc_kernel.py'},
 ]
 
 endpoint = 'taxcalc_endpoint'
