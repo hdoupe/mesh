@@ -21,7 +21,6 @@ class Kernel():
         self.handlers = {}
 
     def set_sockets(self, health_port, rep_port, req_port):
-        print('got ports', health_port, rep_port, req_port)
         self.health = self.context.socket(zmq.REP)
         self.health.bind(f"tcp://*:{health_port}")
 
