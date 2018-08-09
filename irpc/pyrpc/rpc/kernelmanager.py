@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 import subprocess as sp
-import concurrent.futures
+import signal
 
 from rpc.client import Client
 import time
@@ -13,12 +13,10 @@ class KernelManager():
     def __init__(self, kernel_info):
         self.kernel_info = kernel_info
         self.n_threads = len(self.kernel_info)
-
-        self.procs_out = 0
+        self.executor = None
+        self.procs = []
 
     def run_kernels(self):
-        self.executor = concurrent.futures.ThreadPoolExecutor(self.n_threads)
-        cmds = []
         for info in self.kernel_info:
             executable = info['executable']
             module_path = info['module_path']
@@ -27,32 +25,13 @@ class KernelManager():
             req_sock = str(info['req_sock'])
             argv = ' '.join([executable, module_path, health_sock, rep_sock,
                              req_sock])
-            cmds.append(argv)
-        self.executor.map(self.run, cmds)
+            proc = sp.Popen([argv], shell=True)
+            self.procs.append(proc)
 
     def close(self):
-        if hasattr(self, 'executor'):
-            print('shutting down')
-            try:
-                # waiting on a ctr-C
-                while True:
-                    time.sleep(.1)
-            finally:
-                self.executor.shutdown()
-                print('finished...')
-        else:
-            raise ValueError("Executor object was never instantiated!")
-
-    def run(self, cmd):
-        """
-        Run shell commands, make sure they return with status '0'
-        """
-        try:
-            sp.run([cmd], shell=True, check=True)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            return
+        while len(self.procs) > 0:
+            proc = self.procs.pop()
+            proc.send_signal(signal.SIGINT)
 
     def __enter__(self):
         self.run_kernels()
