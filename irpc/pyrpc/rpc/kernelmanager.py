@@ -29,13 +29,6 @@ class KernelManager():
             proc = self.procs.pop()
             proc.send_signal(signal.SIGINT)
 
-    def __enter__(self):
-        self.run_kernels()
-        return self
-
-    def __exit__(self, *exc):
-        self.close()
-
     def read_kernel_info(self, kernel_info):
         sock_base = 5566
         sock_mult = 0
@@ -51,3 +44,10 @@ class KernelManager():
             print(info)
             assert keyset == set(info.keys())
         return kernel_info
+
+    def __enter__(self):
+        self.run_kernels()
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
