@@ -1,14 +1,13 @@
 
 
-def taxcalc_endpoint(year_n, start_year, use_puf_not_cps, use_full_sample,
-                     user_mods, return_dict):
+def taxcalc_endpoint(*args, **kwargs):
     import taxcalc
-    return taxcalc.tbi.run_nth_year_taxcalc_model(year_n, start_year,
-                                                  use_puf_not_cps,
-                                                  use_full_sample,
-                                                  user_mods,
-                                                  return_dict)
+    return taxcalc.tbi.run_nth_year_taxcalc_model(*args, **kwargs)
 
+
+def ogusa_tc_endpoint(*args, **kwargs):
+    import ogusa_tc_interface
+    return ogusa_tc_interface.get_data(*args, **kwargs)
 
 if __name__ == '__main__':
     import sys
@@ -21,5 +20,6 @@ if __name__ == '__main__':
     else:
         kernel = Kernel()
 
-    kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint})
+    kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint,
+                              'ogusa_tc_endpoint': ogusa_tc_endpoint})
     kernel.run()
