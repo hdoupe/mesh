@@ -68,7 +68,8 @@ class Kernel():
         try:
             if not message['endpoint'] in self.handlers:
                 assert message['endpoint'] == 'endpoint not registered'
-            result = self.handlers[message['endpoint']](*message['args'])
+            result = self.handlers[message['endpoint']](*message['args'],
+                                                        **message['kwargs'])
             status = 'SUCCESS'
         except Exception as e:
             result = e.__str__()

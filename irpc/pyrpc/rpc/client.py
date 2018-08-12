@@ -36,11 +36,12 @@ class Client():
 
         assert self.health_check()
 
-    def submit(self, endpoint, args):
+    def submit(self, endpoint, args=(), kwargs={}):
         job_id = str(uuid.uuid4())
         data = {'job_id': job_id,
                 'endpoint': endpoint,
-                'args': args}
+                'args': args,
+                'kwargs': kwargs}
         # print('submitting data', data)
         self.send_func(self.sub_sock, data)
         assert self.sub_sock.recv() == b'OK'
