@@ -2,8 +2,8 @@
 
 `irpc` facilitates cross platform development. Currently, this project
 is experimental and we are actively working to improve its functionality
-and optimize its architecture. `irpc` should be simple to use, simple to
-understand, and simple to modify. This project has been developed with two
+and optimize its architecture. `irpc` should be easy to use, easy to
+understand, and easy to modify. This project has been developed with two
 problems in mind:
 
 - how to easily integrate a library written in Fortran with a library written
