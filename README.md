@@ -1,8 +1,10 @@
 # I-Remote-Procedure-Call
 
-This package facilitates cross platform development. Currently, this project
-is extremely experimental. This project has been developed with two problems
-in mind:
+`irpc` facilitates cross platform development. Currently, this project
+is experimental and we are actively working to improve its functionality
+and optimize its architecture. `irpc` should be simple to use, simple to
+understand, and simple to modify. This project has been developed with two
+problems in mind:
 
 - how to easily integrate a library written in Fortran with a library written
   in Python
@@ -14,6 +16,8 @@ messaging queues, serialization techniques, or remote-procedure-protocols.
 
 Inspiration was drawn from the client-kernel model of the IPykernel/Jupyter
 ecosystem, RPC packages such as PyRPC, and Dask's task submission patterns.
+
+# Examples
 
 - C- Test via*:
 
