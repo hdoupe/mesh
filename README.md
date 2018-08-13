@@ -1,12 +1,19 @@
 # I-Remote-Procedure-Call
 
-- Python- Test via [out of date]:
+This package facilitates cross platform development. Currently, this project
+is extremely experimental. This project has been developed with two problems
+in mind:
 
-Terminal window 1:
-`python kernel.py`
+- how to easily integrate a library written in Fortran with a library written
+  in Python
+- how to easily integrate Python libraries that are likely to have incompatible
+  dependency requirements
 
-Terminal window 2:
-`python client.py`
+We want to solve this problems in such a way that users need no knowledge of
+messaging queues, serialization techniques, or remote-procedure-protocols.
+
+Inspiration was drawn from the client-kernel model of the IPykernel/Jupyter
+ecosystem, RPC packages such as PyRPC, and Dask's task submission patterns.
 
 - C- Test via*:
 
@@ -36,3 +43,6 @@ with Client(health_port='5566', submit_job_port='5567',
 ```
 
 \* email me if interested in the `taxsim9.for` and `taxsimrun.txt` files
+
+- Two Python libraries:
+...
