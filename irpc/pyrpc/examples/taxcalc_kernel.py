@@ -14,9 +14,10 @@ if __name__ == '__main__':
     from rpc.kernel import Kernel
 
     if len(sys.argv[1:]) > 1:
-        health_port, rep_port, req_port = sys.argv[1:]
-        kernel = Kernel(health_port=health_port, rep_port=rep_port,
-                        req_port=req_port)
+        health_port, submit_task_port, get_task_port = sys.argv[1:]
+        kernel = Kernel(health_port=health_port,
+                        submit_task_port=submit_task_port,
+                        get_task_port=get_task_port)
     else:
         kernel = Kernel()
 

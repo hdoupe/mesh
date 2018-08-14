@@ -37,10 +37,10 @@ import pandas as pd
 args = {'mtr_wrt_group': 'full', 'file_name': 'puf_taxsim.txt'}
 endpoint = 'taxsim'
 
-with Client(health_port='5566', submit_job_port='5567',
-            get_job_port='5568') as client:
-    job_id = client.submit(endpoint, args, send_func=send_json)
-    result = client.get(job_id, receive_func=receive_json)
+with Client(health_port='5566', submit_task_port='5567',
+            get_task_port='5568') as client:
+    task = client.submit(endpoint, args, send_func=send_json)
+    result = client.get(task, receive_func=receive_json)
 
     df = pd.read_csv(StringIO(result), sep=' ', skipinitialspace=True)
 ```
@@ -48,4 +48,3 @@ with Client(health_port='5566', submit_job_port='5567',
 \* email me if interested in the `taxsim9.for` and `taxsimrun.txt` files
 
 - Two Python libraries:
-...

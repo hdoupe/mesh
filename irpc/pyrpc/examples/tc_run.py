@@ -32,9 +32,9 @@ with KernelManager(kernel_info) as sk:
     print('running tasks...')
     for info in kernel_info:
         print('getting client: ', info)
-        client = Client(health_port=info['health_sock'],
-                        submit_job_port=info['rep_sock'],
-                        get_job_port=info['req_sock'])
+        client = Client(health_port=info['health_port'],
+                        submit_task_port=info['submit_task_port'],
+                        get_task_port=info['get_task_port'])
         print('got client')
         t = client.submit(endpoint, args)
         print(t)

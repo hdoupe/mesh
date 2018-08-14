@@ -10,7 +10,7 @@
 
 
 struct message {
-    char *job_id;
+    char *task_id;
     char *endpoint;
     char *params_str;
 };
@@ -37,20 +37,20 @@ int main (void)
     int rc = zmq_bind (health, "tcp://*:5566");
     assert (rc == 0);
 
-    void *worker_rep = zmq_socket (context, ZMQ_REP);
-    rc = zmq_bind (worker_rep, "tcp://*:5567");
+    void *submits_task = zmq_socket (context, ZMQ_REP);
+    rc = zmq_bind (submits_task, "tcp://*:5567");
     assert (rc == 0);
 
-    void *worker_req = zmq_socket (context, ZMQ_REQ);
+    void *gets_task = zmq_socket (context, ZMQ_REQ);
     // host.docker.internal is necessary for macs
     // this should be changed to localhost to be more portable
-    zmq_connect (worker_req, "tcp://host.docker.internal:5568");
+    zmq_connect (gets_task, "tcp://host.docker.internal:5568");
     while (1) {
         char *msg;
         // polling http://zguide.zeromq.org/page:all#Handling-Multiple-Sockets
         zmq_pollitem_t items [] = {
             { health, 0, ZMQ_POLLIN, 0 },
-            { worker_rep, 0, ZMQ_POLLIN, 0 },
+            { submits_task, 0, ZMQ_POLLIN, 0 },
         };
         zmq_poll (items, 2, -1);
         if (items[0].revents & ZMQ_POLLIN) {
@@ -60,17 +60,17 @@ int main (void)
             }
         }
         if (items[1].revents & ZMQ_POLLIN) {
-            msg = s_recv (worker_rep);
+            msg = s_recv (submits_task);
             if (msg) {
-                s_send (worker_rep, "OK");
-                handler (msg, worker_req);
+                s_send (submits_task, "OK");
+                handler (msg, gets_task);
             }
         }
         free(msg);
     }
     zmq_close (health);
-    zmq_close (worker_rep);
-    zmq_close (worker_req);
+    zmq_close (submits_task);
+    zmq_close (gets_task);
     zmq_ctx_destroy (context);
     return 0;
 }
@@ -106,11 +106,11 @@ int handler (char *msg, void* socket) {
     struct message m;
     parse_status(&m, msg);
     if (strcmp(m.endpoint, "taxsim") == 0) {
-        int status = taxsimrun(m.job_id, m.params_str, socket);
+        int status = taxsimrun(m.task_id, m.params_str, socket);
         return status;
     } else {
         char *error_msg;
-        json_status (&error_msg, m.job_id, "FAILURE", "Endpoint doesn\'t exist");
+        json_status (&error_msg, m.task_id, "FAILURE", "Endpoint doesn\'t exist");
         s_send(socket, error_msg);
         free (error_msg);
         return 1;
@@ -118,9 +118,9 @@ int handler (char *msg, void* socket) {
     return 0;
 }
 
-int taxsimrun(char* job_id, char *msg, void* socket){
+int taxsimrun(char* task_id, char *msg, void* socket){
     char *pending;
-    json_status (&pending, job_id, "PENDING", "");
+    json_status (&pending, task_id, "PENDING", "");
     s_send(socket, pending);
     free (pending);
     printf("received: %s\n", s_recv(socket));
@@ -130,7 +130,7 @@ int taxsimrun(char* job_id, char *msg, void* socket){
     if (status != 0) {
         printf("Bad JSON input: %s\n", msg);
         char *error_msg;
-        json_status (&error_msg, job_id, "FAILURE", "Failed to allocate sufficient memory");
+        json_status (&error_msg, task_id, "FAILURE", "Failed to allocate sufficient memory");
         s_send(socket, error_msg);
         free (error_msg);
         return 1;
@@ -143,7 +143,7 @@ int taxsimrun(char* job_id, char *msg, void* socket){
     buffer = (char*) malloc(sizeof(char)*buffersize);
     if (buffer == NULL){
         char *error_msg;
-        json_status (&error_msg, job_id, "FAILURE", "Failed to allocate sufficient memory");
+        json_status (&error_msg, task_id, "FAILURE", "Failed to allocate sufficient memory");
         s_send(socket, error_msg);
         free (error_msg);
         return 1;
@@ -153,9 +153,9 @@ int taxsimrun(char* job_id, char *msg, void* socket){
              argsize, buffer, buffersize);
 
     char *json_str;
-    if (json_status (&json_str, job_id, "SUCCESS", buffer) == 1){
+    if (json_status (&json_str, task_id, "SUCCESS", buffer) == 1){
         char *error_msg;
-        json_status (&error_msg, job_id, "FAILURE", "Bad JSON");
+        json_status (&error_msg, task_id, "FAILURE", "Bad JSON");
         s_send (socket, error_msg);
         return 1;
     }
@@ -182,15 +182,15 @@ int parse_status(struct message *m, const char * const m_str) {
         cJSON_Delete (json_obj);
         return 1;
     }
-    cJSON *job_id = cJSON_GetObjectItemCaseSensitive (json_obj, "job_id");
+    cJSON *task_id = cJSON_GetObjectItemCaseSensitive (json_obj, "task_id");
     cJSON *endpoint = cJSON_GetObjectItemCaseSensitive (json_obj, "endpoint");
     cJSON *params_str = cJSON_GetObjectItemCaseSensitive (json_obj, "args");
     char *tmpparam = cJSON_Print (params_str);
 
-    m->job_id = malloc (strlen (job_id->valuestring) + 1);
+    m->task_id = malloc (strlen (task_id->valuestring) + 1);
     m->endpoint = malloc (strlen (endpoint->valuestring) + 1);
     m->params_str = malloc (strlen (tmpparam) + 1);
-    strcpy (m->job_id, job_id->valuestring);
+    strcpy (m->task_id, task_id->valuestring);
     strcpy (m->endpoint, endpoint->valuestring);
     strcpy (m->params_str, tmpparam);
 
@@ -227,9 +227,9 @@ int parse_taxsim_params(struct params *input, const char * const params)
     return 0;
 }
 
-int json_status(char **json_str, char *job_id, char *status, char *result){
+int json_status(char **json_str, char *task_id, char *status, char *result){
     cJSON *res = cJSON_CreateObject();
-    if (cJSON_AddStringToObject(res, "job_id", job_id) == NULL){
+    if (cJSON_AddStringToObject(res, "task_id", task_id) == NULL){
         return 1;
     }
     if (cJSON_AddStringToObject(res, "status", status) == NULL){

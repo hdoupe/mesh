@@ -9,10 +9,10 @@ from rpc.serializers import (send_msgpack, send_json, send_pickle,
 class Client():
 
     def __init__(self, context=None, health_port='5566',
-                 submit_job_port='5567', get_job_port='5568',
+                 submit_task_port='5567', get_task_port='5568',
                  serializer='pickle'):
         self.context = context or zmq.Context()
-        self.set_sockets(health_port, submit_job_port, get_job_port)
+        self.set_sockets(health_port, submit_task_port, get_task_port)
         serializers = {
             'json': (receive_json, send_json),
             'msgpack': (receive_msgpack, send_msgpack),
@@ -21,15 +21,15 @@ class Client():
 
         self.receive_func, self.send_func = serializers[serializer]
 
-    def set_sockets(self, health_port, submit_job_port, get_job_port):
+    def set_sockets(self, health_port, submit_task_port, get_task_port):
         self.health_sock = self.context.socket(zmq.REQ)
         self.health_sock.connect(f"tcp://127.0.0.1:{health_port}")
 
         self.sub_sock = self.context.socket(zmq.REQ)
-        self.sub_sock.connect(f"tcp://127.0.0.1:{submit_job_port}")
+        self.sub_sock.connect(f"tcp://127.0.0.1:{submit_task_port}")
 
         self.get_sock = self.context.socket(zmq.REP)
-        self.get_sock.bind(f"tcp://*:{get_job_port}")
+        self.get_sock.bind(f"tcp://*:{get_task_port}")
 
         self.poller = zmq.Poller()
         self.poller.register(self.get_sock)
@@ -37,15 +37,15 @@ class Client():
         assert self.health_check()
 
     def submit(self, endpoint, args=(), kwargs={}):
-        job_id = str(uuid.uuid4())
-        data = {'job_id': job_id,
+        task_id = str(uuid.uuid4())
+        data = {'task_id': task_id,
                 'endpoint': endpoint,
                 'args': args,
                 'kwargs': kwargs}
         # print('submitting data', data)
         self.send_func(self.sub_sock, data)
         assert self.sub_sock.recv() == b'OK'
-        return {'job_id': job_id, 'status': 'PENDING', 'result': None}
+        return {'task_id': task_id, 'status': 'PENDING', 'result': None}
 
     def get(self, task):
         message = None
@@ -53,13 +53,13 @@ class Client():
             socks = dict(self.poller.poll())
             if self.get_sock in socks:
                 message = self.receive_func(self.get_sock)
-                print(f"received message {message['job_id']}: {message['status']}")
+                print(f"received message {message['task_id']}: {message['status']}")
                 self.get_sock.send(b'OK')
-                if message['job_id'] == task['job_id']:
+                if message['task_id'] == task['task_id']:
                     task['status'] = message['status']
                     task['result'] = message['result']
                 else:
-                    e_msg = f"received unexpected job id: {message['job_id']}"
+                    e_msg = f"received unexpected task id: {message['task_id']}"
                     raise IOError(e_msg)
         return task
 

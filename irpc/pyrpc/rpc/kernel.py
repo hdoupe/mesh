@@ -6,10 +6,10 @@ from rpc.serializers import (send_msgpack, send_json, send_pickle,
 
 class Kernel():
 
-    def __init__(self, context=None, health_port='5566', rep_port='5567',
-                 req_port='5568', serializer='pickle'):
+    def __init__(self, context=None, health_port='5566', submit_task_port='5567',
+                 get_task_port='5568', serializer='pickle'):
         self.context = context or zmq.Context()
-        self.set_sockets(health_port, rep_port, req_port)
+        self.set_sockets(health_port, submit_task_port, get_task_port)
         serializers = {
             'json': (receive_json, send_json),
             'msgpack': (receive_msgpack, send_msgpack),
@@ -20,19 +20,19 @@ class Kernel():
 
         self.handlers = {}
 
-    def set_sockets(self, health_port, rep_port, req_port):
+    def set_sockets(self, health_port, submit_task_port, get_task_port):
         self.health = self.context.socket(zmq.REP)
         self.health.bind(f"tcp://*:{health_port}")
 
-        self.worker_rep = self.context.socket(zmq.REP)
-        self.worker_rep.bind(f"tcp://*:{rep_port}")
+        self.submits_task = self.context.socket(zmq.REP)
+        self.submits_task.bind(f"tcp://*:{submit_task_port}")
 
-        self.worker_req = self.context.socket(zmq.REQ)
-        self.worker_req.connect(f"tcp://localhost:{req_port}")
+        self.gets_task = self.context.socket(zmq.REQ)
+        self.gets_task.connect(f"tcp://localhost:{get_task_port}")
 
         self.poller = zmq.Poller()
         self.poller.register(self.health, zmq.POLLIN)
-        self.poller.register(self.worker_rep, zmq.POLLIN)
+        self.poller.register(self.submits_task, zmq.POLLIN)
 
     def run(self):
         try:
@@ -48,9 +48,9 @@ class Kernel():
             if self.health in socks:
                 self.health.recv()
                 self.health.send(b'OK')
-            if self.worker_rep in socks:
-                message = self.receive_func(self.worker_rep)
-                self.worker_rep.send(b'OK')
+            if self.submits_task in socks:
+                message = self.receive_func(self.submits_task)
+                self.submits_task.send(b'OK')
                 self.handler(message)
 
     def _close(self):
@@ -60,11 +60,11 @@ class Kernel():
             self.context.term()
 
     def handler(self, message):
-        out = {'job_id': message['job_id'],
+        out = {'task_id': message['task_id'],
                'status': 'PENDING',
                'result': False}
-        self.send_func(self.worker_req, out)
-        assert self.worker_req.recv() == b'OK'
+        self.send_func(self.gets_task, out)
+        assert self.gets_task.recv() == b'OK'
         try:
             if not message['endpoint'] in self.handlers:
                 assert message['endpoint'] == 'endpoint not registered'
@@ -74,9 +74,9 @@ class Kernel():
         except Exception as e:
             result = e.__str__()
             status = 'FAILURE'
-        out = {'job_id': message['job_id'], 'status': status, 'result': result}
-        self.send_func(self.worker_req, out)
-        assert self.worker_req.recv() == b'OK'
+        out = {'task_id': message['task_id'], 'status': status, 'result': result}
+        self.send_func(self.gets_task, out)
+        assert self.gets_task.recv() == b'OK'
 
     def register_handlers(self, new_handlers):
         for name, func in new_handlers.items():
