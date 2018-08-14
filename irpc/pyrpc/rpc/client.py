@@ -4,10 +4,76 @@ import zmq
 
 from rpc.serializers import (send_msgpack, send_json, send_pickle,
                              receive_msgpack, receive_json, receive_pickle)
+from dataclasses import dataclass, field
+from typing import Union, Iterable, Dict, Any
 
 
-class Client():
+class TaskResultNotReady(Exception):
+    pass
 
+
+class TaskFailure(Exception):
+    pass
+
+
+@dataclass
+class Task:
+    client: 'Client'
+    task_id: str = field(init=False,
+                         default_factory=lambda: str(uuid.uuid1()))
+    endpoint: str
+    args: Iterable[Any] = ()
+    kwargs: Dict[str, Any] = field(default_factory=dict)
+    status: str = field(default=None, init=False)
+    _result: Union[str, None] = field(default=None, init=False)
+    _error_msg: Union[str, None] = field(default=None, init=False)
+    _error_type: Union[str, None] = field(default=None, init=False)
+
+    @property
+    def result(self):
+        if self.status == 'SUCCESS':
+            return self._result
+        elif self.status == 'PENDING':
+            raise TaskResultNotReady()
+        elif self.status == 'FAILURE':
+            raise TaskFailure(self._error_type, self._error_msg)
+        else:
+            raise RuntimeError('Unknown status: ', self.status)
+
+    def submit(self):
+        data = {'task_id': self.task_id,
+                'endpoint': self.endpoint,
+                'args': self.args,
+                'kwargs': self.kwargs}
+        # print('submitting data', data)
+        self.client.send_func(self.client.sub_sock, data)
+        assert self.client.sub_sock.recv() == b'OK'
+        self.status = 'PENDING'
+
+    def get(self):
+        message = None
+        while self.status == 'PENDING':
+            socks = dict(self.client.poller.poll())
+            if self.client.get_sock in socks:
+                message = self.client.receive_func(self.client.get_sock)
+                print(f"received message {message['task_id']}: " +
+                      f"{message['status']}")
+                self.client.get_sock.send(b'OK')
+                if message['task_id'] == self.task_id:
+                    self.status = message['status']
+                    if message['status'] == 'SUCCESS':
+                        self._result = message['result']
+                    elif self.status == 'FAILURE':
+                        self._error_msg = message['error_msg']
+                        self._error_type = message['error_type']
+                else:
+                    e_msg = ("received unexpected task id: " +
+                             f"{message['task_id']}")
+                    raise IOError(e_msg)
+        return self.result
+
+
+class Client:
     def __init__(self, kernel_id, context=None, health_port=None,
                  submit_task_port=None, get_task_port=None,
                  serializer='pickle'):
@@ -31,7 +97,7 @@ class Client():
             r = receive_json(info)
             (health_port, submit_task_port,
                 get_task_port) = (r['health_port'], r['submit_task_port'],
-                                 r['get_task_port'])
+                                  r['get_task_port'])
             info.close()
 
         self.health_sock = self.context.socket(zmq.REQ)
@@ -48,32 +114,15 @@ class Client():
 
         assert self.health_check()
 
-    def submit(self, endpoint, args=(), kwargs={}):
-        task_id = str(uuid.uuid4())
-        data = {'task_id': task_id,
-                'endpoint': endpoint,
-                'args': args,
-                'kwargs': kwargs}
-        # print('submitting data', data)
-        self.send_func(self.sub_sock, data)
-        assert self.sub_sock.recv() == b'OK'
-        return {'task_id': task_id, 'status': 'PENDING', 'result': None}
+    def submit_task(self, endpoint, args, kwargs):
+        t = Task(self, endpoint, args, kwargs)
+        t.submit()
+        return t
 
-    def get(self, task):
-        message = None
-        while task['status'] == 'PENDING':
-            socks = dict(self.poller.poll())
-            if self.get_sock in socks:
-                message = self.receive_func(self.get_sock)
-                print(f"received message {message['task_id']}: {message['status']}")
-                self.get_sock.send(b'OK')
-                if message['task_id'] == task['task_id']:
-                    task['status'] = message['status']
-                    task['result'] = message['result']
-                else:
-                    e_msg = f"received unexpected task id: {message['task_id']}"
-                    raise IOError(e_msg)
-        return task
+    def do_task(self, endpoint, args, kwargs):
+        t = Task(self, endpoint, args, kwargs)
+        t.submit()
+        return t.get()
 
     def health_check(self):
         self.health_sock.send(b'')

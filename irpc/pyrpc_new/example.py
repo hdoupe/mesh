@@ -1,4 +1,4 @@
-from rpc.client import Client
+from rpc.client import Client, TaskFailure
 from rpc.kernelmanager import KernelManager
 from client import get_remote, deref
 import itertools
@@ -22,3 +22,9 @@ with KernelManager(kernel_info) as km:
         # Reverse the list remotely, then retrieve it
         revlist = deref(rb.list(rb.reversed(r)))
         assert list(reversed(wholelist)) == revlist
+        try:
+            b.failing_method()
+        except TaskFailure as e:
+            assert e.args == ('AssertionError', 'foo')
+        else:
+            raise

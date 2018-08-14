@@ -18,15 +18,7 @@ netrefs = {}
 def syncreq(client, endpoint, *args, **kwargs):
     if isinstance(client, BaseNetref):
         client = client.____cli__
-    j = client.submit(endpoint, args=args, kwargs=kwargs)
-    r = client.get(j)
-    print(j['result'])
-    return j['result']
-
-
-def asyncreq(client, endpoint, *args, **kwargs):
-    # TODO: Make this asynchronous (don't wait for reply)
-    syncreq(client, endpoint, *args, **kwargs)
+    return client.do_task(endpoint, args=args, kwargs=kwargs)
 
 
 def deref(netref):
@@ -89,8 +81,8 @@ class BaseNetref(object):
 
     def __del__(self):
         try:
-            asyncreq(self, 'handle_del', self.____oid__)
-        except Exception:
+            syncreq(self, 'handle_del', self.____oid__)
+        except BaseException:
             pass
 
     # To implement:

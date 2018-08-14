@@ -16,6 +16,9 @@ class Test:
         import taxcalc
         return taxcalc.Records.cps_constructor().e00200.tolist()
 
+    def failing_method(self):
+        raise AssertionError("foo")
+
 
 exported_vars = {
     "Test": Test,
