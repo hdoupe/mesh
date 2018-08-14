@@ -1,6 +1,6 @@
 from rpc.kernel import Kernel
 from uuid import uuid1
-from rpyc.lib.colls import RefCountingColl
+import builtins
 
 
 _immutable_builtin_types = [
@@ -18,7 +18,8 @@ class Test:
 
 
 exported_vars = {
-    "Test": Test
+    "Test": Test,
+    "builtins": builtins
 }
 
 imported_vars = {}
@@ -53,8 +54,12 @@ def handle_getattr(oid, attrname):
     return wrap_result(getattr(imported_vars[oid], attrname))
 
 
-def handle_call(oid, callargs, callkwargs):
-    return wrap_result(imported_vars[oid](*callargs, **callkwargs))
+def handle_call(oid, valargs, valkwargs, refargs, refkwargs):
+    args = [imported_vars[arg_oid] for arg_oid in refargs] + valargs
+    kwargs = {**{kw: imported_vars[arg_oid]
+                 for kw, arg_oid in refkwargs.items()},
+              **refkwargs}
+    return wrap_result(imported_vars[oid](*args, **kwargs))
 
 
 kernel = Kernel(serializer='msgpack')
