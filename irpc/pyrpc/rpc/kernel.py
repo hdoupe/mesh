@@ -54,7 +54,7 @@ class Kernel():
                 self.handler(message)
 
     def _close(self):
-        socks = [self.health, self.worker_req, self.worker_rep]
+        socks = [self.health, self.submits_task, self.gets_task]
         [sock.close() for sock in socks if sock is not None]
         if self.context is not None:
             self.context.term()

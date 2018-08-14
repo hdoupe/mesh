@@ -1,17 +1,18 @@
 from rpc.kernelmanager import KernelManager
 from rpc.client import Client
 
+
 health, rep, req = 5566, 5567, 5568
-kernel_info = [
-    {'name': 'taxcalc1',
+kernel_info = {
+    'taxcalc1': {
      'executable': '/Users/henrydoupe/anaconda3/envs/taxcalc-dev/bin/python',
      'module_path': 'taxcalc_kernel.py'},
-    {'name': 'taxcalc2',
+    'taxcalc2': {
      'module_path': 'taxcalc_kernel.py'},
-    {'name': 'taxcalc3',
+    'taxcalc3': {
      'executable': '/Users/henrydoupe/anaconda3/bin/python',
      'module_path': 'taxcalc_kernel.py'},
-]
+}
 
 endpoint = 'taxcalc_endpoint'
 args = [
@@ -30,11 +31,9 @@ args = [
 
 with KernelManager(kernel_info) as sk:
     print('running tasks...')
-    for info in kernel_info:
-        print('getting client: ', info)
-        client = Client(health_port=info['health_port'],
-                        submit_task_port=info['submit_task_port'],
-                        get_task_port=info['get_task_port'])
+    for id in kernel_info:
+        print('getting client: ', id)
+        client = Client(kernel_id=id)
         print('got client')
         t = client.submit(endpoint, args)
         print(t)

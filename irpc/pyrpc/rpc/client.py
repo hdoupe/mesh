@@ -8,11 +8,12 @@ from rpc.serializers import (send_msgpack, send_json, send_pickle,
 
 class Client():
 
-    def __init__(self, context=None, health_port='5566',
-                 submit_task_port='5567', get_task_port='5568',
+    def __init__(self, kernel_id, context=None, health_port=None,
+                 submit_task_port=None, get_task_port=None,
                  serializer='pickle'):
         self.context = context or zmq.Context()
-        self.set_sockets(health_port, submit_task_port, get_task_port)
+        self.set_sockets(kernel_id, health_port, submit_task_port,
+                         get_task_port)
         serializers = {
             'json': (receive_json, send_json),
             'msgpack': (receive_msgpack, send_msgpack),
@@ -21,7 +22,18 @@ class Client():
 
         self.receive_func, self.send_func = serializers[serializer]
 
-    def set_sockets(self, health_port, submit_task_port, get_task_port):
+    def set_sockets(self, kernel_id, health_port, submit_task_port,
+                    get_task_port):
+        if health_port is None:
+            info = self.context.socket(zmq.REQ)
+            info.connect("tcp://127.0.0.1:8080")
+            send_json(info, {'handle': 'info', 'kernel_id': kernel_id})
+            r = receive_json(info)
+            (health_port, submit_task_port,
+                get_task_port) = (r['health_port'], r['submit_task_port'],
+                                 r['get_task_port'])
+            info.close()
+
         self.health_sock = self.context.socket(zmq.REQ)
         self.health_sock.connect(f"tcp://127.0.0.1:{health_port}")
 
