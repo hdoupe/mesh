@@ -1,4 +1,4 @@
-from rpc.client import Client
+from rpc.client import Client, TaskFailure
 from rpc.kernelmanager import KernelManager
 from client import get_remote, deref
 import itertools
@@ -12,7 +12,19 @@ with KernelManager(kernel_info) as km:
         print("Got " + b.some_method())
         r = b.another_method()
         print("Got ", r)
+        # Get remote builtins module
+        rb = get_remote(cli, 'builtins')
+        print("Got ", )
         # Get 1000 elements one-by-one. Doesn't take as long as the whole list
-        print("Got ", list(itertools.islice(r, 1000)))
-        # Get 1000 elements as serialized list
-        print("Got ", deref(r))
+        list(itertools.islice(r, 1000))
+        # Get all elements as serialized list
+        wholelist = deref(r)
+        # Reverse the list remotely, then retrieve it
+        revlist = deref(rb.list(rb.reversed(r)))
+        assert list(reversed(wholelist)) == revlist
+        try:
+            b.failing_method()
+        except TaskFailure as e:
+            assert e.args == ('AssertionError', 'foo')
+        else:
+            raise
