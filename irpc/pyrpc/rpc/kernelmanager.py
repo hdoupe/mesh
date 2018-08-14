@@ -54,7 +54,6 @@ class KernelManager():
         self.procs = []
         self.executor = None
         self.config_port = int(config_port)
-        self.start_config_listener()
 
     def run_kernels(self):
         """
@@ -124,6 +123,7 @@ class KernelManager():
 
 
     def __enter__(self):
+        self.start_config_listener()
         self.run_kernels()
         return self
 
