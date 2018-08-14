@@ -2,50 +2,88 @@ from rpc.client import Client
 
 
 _local_netref_attrs = frozenset([
-    '____cli__', '____oid__', '____otype__', '__class__', '__cmp__',
+    '____proxyclient__', '____oid__', '____otype__', '__class__', '__cmp__',
     '__del__', '__delattr__', '__dir__', '__doc__', '__getattr__',
     '__getattribute__', '__methods__', '__init__', '__metaclass__',
     '__module__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
     '__setattr__', '__slots__', '__str__', '__weakref__', '__dict__',
-    '__members__',  '__exit__', '__hash__', '__call__', '____deref__'
+    '__members__',  '__exit__', '__hash__', '__call__', '____deref__',
+    '____unwrapped_sync_req__'
 ])
 """the set of attributes that are local to the netref object"""
 
 
-netrefs = {}
+class ProxyClient:
+    def __init__(self, *args, **kwargs):
+        self.netrefs = {}
+        # Allow reusing an existing client
+        if 'client' in kwargs:
+            self.client = kwargs['client']
+            self._managed_client = False
+        else:
+            self.client = Client(*args, **kwargs)
+            self._managed_client = True
 
+    def sync_req(self, endpoint, *args, **kwargs):
+        return self.client.do_task(endpoint, args, kwargs)
 
-def syncreq(client, endpoint, *args, **kwargs):
-    if isinstance(client, BaseNetref):
-        client = client.____cli__
-    return client.do_task(endpoint, args=args, kwargs=kwargs)
+    def async_req(self, endpoint, *args, **kwargs):
+        # TODO: Make this not wait for the result
+        self.client.do_task(endpoint, args, kwargs)
 
+    def unwrap_result(self, r):
+        if 'result' in r:
+            return r['result']
+        elif r['oid'] in self.netrefs:
+            return self.netrefs[r['oid']]
+        else:
+            ref = GenericNetref(self, r['oid'], r['otype'])
+            self.netrefs[r['oid']] = ref
+            return ref
 
-def deref(netref):
-    return netref.____deref__()
+    def unwrapped_sync_req(self, *args, **kwargs):
+        return self.unwrap_result(self.sync_req(*args, **kwargs))
+
+    def get_remote(self, varname):
+        return self.unwrapped_sync_req('handle_get_remote', varname)
+
+    def __enter__(self, *args, **kwargs):
+        if self._managed_client:
+            self.client.__enter__(*args, **kwargs)
+            return self
+        else:
+            raise AttributeError('__enter__')
+
+    def __exit__(self, *args, **kwargs):
+        if self._managed_client:
+            return self.client.__exit__(*args, **kwargs)
+        else:
+            raise AttributeError('__exit__')
 
 
 class BaseNetref(object):
     """The base netref class, from which all netref classes derive."""
     def __init__(self, client, oid, otype):
-        self.____cli__ = client
+        self.____proxyclient__ = client
         self.____oid__ = oid
         self.____otype__ = otype
 
+    def ____unwrapped_sync_req__(self, endpoint, *args, **kwargs):
+        return self.____proxyclient__.unwrapped_sync_req(
+            endpoint, *args, **kwargs, oid=self.____oid__)
+
     def __getattribute__(self, name):
         # Could implement __class__ manipulation later
-        def go_get():
-            return unwrap_result(
-                self.____cli__,
-                syncreq(self, 'handle_getattr',
-                        oid=self.____oid__, attrname=name))
+        def get_remote_attr():
+            return self.____unwrapped_sync_req__(
+                'handle_getattr', attrname=name)
         if name in _local_netref_attrs:
             try:
                 return object.__getattribute__(self, name)
             except AttributeError:
-                return go_get()
+                return get_remote_attr()
         else:
-            return go_get()
+            return get_remote_attr()
 
     def __call__(self, *args, **kwargs):
         valargs, valkwargs, refargs, refkwargs = [], {}, [], {}
@@ -59,11 +97,10 @@ class BaseNetref(object):
                 refkwargs[kw] = arg.____oid__
             else:
                 valkwargs[kw] = arg
-        return unwrap_result(
-            self.____cli__,
-            syncreq(self, 'handle_call', oid=self.____oid__,
+        return self.____unwrapped_sync_req__(
+                    'handle_call',
                     valargs=valargs, valkwargs=valkwargs,
-                    refargs=refargs, refkwargs=refkwargs))
+                    refargs=refargs, refkwargs=refkwargs)
 
     def __iter__(self):
         return self.__iter__()
@@ -75,13 +112,11 @@ class BaseNetref(object):
         return self.__len__()
 
     def ____deref__(self):
-        return unwrap_result(
-            self.____cli__,
-            syncreq(self, 'handle_deref', self.____oid__))
+        return self.____unwrapped_sync_req__('handle_deref')
 
     def __del__(self):
         try:
-            syncreq(self, 'handle_del', self.____oid__)
+            self.____proxyclient__.async_req('handle_del', oid=self.____oid__)
         except BaseException:
             pass
 
@@ -98,19 +133,11 @@ class BaseNetref(object):
 
 class GenericNetref(BaseNetref):
     """
-    We could have specialized netref classes in the future; this one is not.
+    We could have specialized netref classes in the future; this one is not
+    specialized.
     """
     pass
 
 
-def unwrap_result(client, r):
-    if 'result' in r:
-        return r['result']
-    elif r['oid'] in netrefs:
-        return netrefs[r['oid']]
-    else:
-        return GenericNetref(client, r['oid'], r['otype'])
-
-
-def get_remote(client, varname):
-    return unwrap_result(client, syncreq(client, 'handle_get_remote', varname))
+def deref(netref):
+    return netref.____deref__()

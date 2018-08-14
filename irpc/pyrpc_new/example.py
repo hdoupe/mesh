@@ -1,19 +1,19 @@
-from rpc.client import Client, TaskFailure
+from rpc.client import TaskFailure
 from rpc.kernelmanager import KernelManager
-from client import get_remote, deref
+from client import ProxyClient, deref
 import itertools
 
 kernel_info = {'new': {'module_path': 'kernel.py'}}
 
 with KernelManager(kernel_info) as km:
-    with Client(kernel_id='new', serializer='msgpack') as cli:
-        a = get_remote(cli, 'Test')
+    with ProxyClient(kernel_id='new', serializer='msgpack') as cli:
+        a = cli.get_remote('Test')
         b = a()
         print("Got " + b.some_method())
         r = b.another_method()
         print("Got ", r)
         # Get remote builtins module
-        rb = get_remote(cli, 'builtins')
+        rb = cli.get_remote('builtins')
         print("Got ", )
         # Get 1000 elements one-by-one. Doesn't take as long as the whole list
         list(itertools.islice(r, 1000))
