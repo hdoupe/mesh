@@ -74,3 +74,21 @@ if __name__ == '__main__':
     kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint})
     kernel.run()
 ```
+
+The class-proxy approach cuts through the complexity and exposure of implementation details of the approach shown above. With the class-proxy approach, it looks like this n the `Client` side:
+
+```
+from rpc.client import Client
+from rpc.kernelmanager import KernelManager
+from client import get_remote, deref
+import itertools
+
+kernel_info = {'new': {'module_path': 'kernel.py'}}
+
+with KernelManager(kernel_info) as km:
+    with Client(kernel_id='new', serializer='msgpack') as cli:
+        TaxcalcProxy = get_remote(cli, 'taxcalc')
+        tcproxy = TaxcalcProxy()
+        result = tcproxy.run_nth_year_taxcalc(*args, **kwargs)
+```
+
