@@ -34,7 +34,7 @@ from rpc.client import Client
 
 kernel_info = {
     'taxcalc1': {
-        module_path': 'taxcalc_kernel.py',
+        'module_path': 'taxcalc_kernel.py',
         'executable': '/Users/henrydoupe/anaconda3/envs/taxcalc-dev/bin/python'
     }
 }
@@ -90,5 +90,80 @@ with KernelManager(kernel_info) as km:
         TaxcalcProxy = get_remote(cli, 'taxcalc')
         tcproxy = TaxcalcProxy()
         result = tcproxy.run_nth_year_taxcalc(*args, **kwargs)
+```
+
+
+Examples
+-----------
+
+**OG-USA example**
+
+OG-USA depends on Tax-Calculator for calculating marginal-tax-rates. In the past, these two projects' dependency requirements have become incompatible over brief windows of time. To run OG-USA during these periods of time, an out-of-date Tax-Calculator package would have to be used or OG-USA developers would have to rush to resolve the dependecy problem. We have been in search of a way to resolve this dependency problem with only a minimal amount of source-code intrusion.
+
+Fortunately, OG-USA's primary interaction with Tax-Calculator can be isolated to one API call:
+
+```
+micro_data = get_micro_data.get_data(baseline=baseline,
+                                     start_year=beg_yr,
+                                     reform=reform, data=data,
+                                     client=client,
+                                     num_workers=num_workers) 
+```
+
+The module `get_micro_data.py` containing the function `get_data` and dependent functions was moved into the current working directory where it can be called from the kernel running Tax-Calculator.
+
+OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Finally, in the `pyrpc` directory, run `pip install -e .` to create a local installation of the `irpc` package.
+
+Setup the Tax-Calculator kernel:
+
+```
+
+def taxcalc_endpoint(*args, **kwargs):
+    import taxcalc
+    return taxcalc.tbi.run_nth_year_taxcalc_model(*args, **kwargs)
+
+
+def ogusa_tc_endpoint(*args, **kwargs):
+    import ogusa_tc_interface
+    return ogusa_tc_interface.get_data(*args, **kwargs)
+
+if __name__ == '__main__':
+    import sys
+    from rpc.kernel import Kernel
+
+    health_port, submit_task_port, get_task_port = sys.argv[1:]
+    kernel = Kernel(health_port=health_port,
+                    submit_task_port=submit_task_port,
+                    get_task_port=get_task_port)
+
+    kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint,
+                              'ogusa_tc_endpoint': ogusa_tc_endpoint})
+    kernel.run()
+```
+
+The environment required for this file can be created from the following commands:
+```
+conda create -n taxcalc-env python=3.6 taxcalc
+source activate taxcalc-env
+pip install pyzmq msgpack
+```
+
+To setup the kernel for OG-USA, use the following script:
+
+```
+
+def ogusa(*args, **kwargs):
+    from ogusa.scripts import run_ogusa
+    return run_ogusa.run_micro_macro(*args, **kwargs)
+
+if __name__ == '__main__':
+    import sys
+    from rpc.kernel import Kernel
+
+    health_port, submit_task_port, get_task_port = sys.argv[1:]
+    kernel = Kernel()
+
+    kernel.register_handlers({'ogusa_endpoint': taxcalc_endpoint})
+    kernel.run()
 ```
 
