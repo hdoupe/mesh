@@ -1,4 +1,4 @@
-from rpc.client import Client
+from rpc.client import Client, TaskFailure
 
 
 _local_netref_attrs = frozenset([
@@ -85,6 +85,22 @@ class BaseNetref(object):
         else:
             return get_remote_attr()
 
+    def __setattr__(self, name, value):
+        if name in _local_netref_attrs:
+            object.__setattr__(self, name, value)
+        elif isinstance(value, BaseNetref):
+            self.____proxyclient__.sync_req(
+                'handle_setattr',
+                oid=self.____oid__,
+                attrname=name,
+                attrref=value.____oid__)
+        else:
+            self.____proxyclient__.sync_req(
+                'handle_setattr',
+                oid=self.____oid__,
+                attrname=name,
+                attrval=value)
+
     def __call__(self, *args, **kwargs):
         valargs, valkwargs, refargs, refkwargs = [], {}, [], {}
         for arg in args:
@@ -102,17 +118,15 @@ class BaseNetref(object):
                     valargs=valargs, valkwargs=valkwargs,
                     refargs=refargs, refkwargs=refkwargs)
 
-    def __iter__(self):
-        return self.__iter__()
-
-    def __next__(self):
-        return self.__next__()
-
-    def __len__(self):
-        return self.__len__()
-
     def ____deref__(self):
         return self.____unwrapped_sync_req__('handle_deref')
+
+    def __next__(self):
+        try:
+            self.__next__()
+        except TaskFailure as e:
+            if e.args[0] == 'StopIteration':
+                raise StopIteration(*e.args[1:])
 
     def __del__(self):
         try:
@@ -122,7 +136,6 @@ class BaseNetref(object):
 
     # To implement:
     # - __delattr__
-    # - __setattr__
     # - __dir__
     # - __hash__
     # - __cmp__
@@ -137,6 +150,30 @@ class GenericNetref(BaseNetref):
     specialized.
     """
     pass
+
+
+"""
+Magic methods that may need to appear present in the class definition to
+be recognized by Python. Can potentially include many more methods.
+See https://docs.python.org/3/reference/datamodel.html#special-lookup
+"""
+_placeholder_methods = [x for x in (set(dir(int)).union(dir(list))
+                                    .difference(dir(GenericNetref)))
+                        if x.startswith('__')] + [
+    '__eq__', '__ne__'
+]
+print(_placeholder_methods)
+
+
+def _make_method(name):
+    def method(self, *args, **kwargs):
+        return getattr(self, name)(*args, **kwargs)
+    method.__name__ = name
+    return method
+
+
+for name in _placeholder_methods:
+    setattr(GenericNetref, name, _make_method(name))
 
 
 def deref(netref):
