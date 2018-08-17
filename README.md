@@ -119,7 +119,7 @@ What are the parts that need to be assembled for this to work?
      - a `KernelManager` to start the kernels described in (1) and (2)
      - a `Client` to submit data from the user to the OG-USA `kernel` described in (1)
 
-1. Setup the OG-USA kernel:
+1. **Setup the OG-USA kernel:**
 ```
 
 def ogusa(*args, **kwargs):
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 ```
 OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `irpc` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pyrpc` directory and running `pip install -e .`.  
 
-2. Setup the Tax-Calculator kernel:
+2. **Setup the Tax-Calculator kernel:**
 ```
 def ogusa_tc_endpoint(*args, **kwargs):
     import get_micro_data
@@ -166,7 +166,7 @@ pip install pyzmq msgpack
 pip install -e . # from pyrpc directory
 ```
 
-3. Finally, run commands against the OG-USA kernel:
+3. **Finally, run commands against the OG-USA kernel:**
 ```
 from rpc.kernelmanager import KernelManager
 from rpc.client import Client
