@@ -48,8 +48,8 @@ kwargs = {'kwarg1': v1, 'kwarg2': v2}
 
 with KernelManager(kernel_info) as km:
     client = Client(kernel_id='taxcalc1')
-    task = client.submit(endpoint, args=args, kwargs=kwargs)
-    result = client.get(task)
+    task = client.submit_task(endpoint, args=args, kwargs=kwargs)
+    result = task.get()
     print(result)
 
 ```
@@ -65,13 +65,10 @@ if __name__ == '__main__':
     import sys
     from rpc.kernel import Kernel
 
-    if len(sys.argv[1:]) > 1:
-        health_port, submit_task_port, get_task_port = sys.argv[1:]
-        kernel = Kernel(health_port=health_port,
-                        submit_task_port=submit_task_port,
-                        get_task_port=get_task_port)
-    else:
-        kernel = Kernel()
+    health_port, submit_task_port, get_task_port = sys.argv[1:]
+    kernel = Kernel(health_port=health_port,
+                    submit_task_port=submit_task_port,
+                    get_task_port=get_task_port)
 
     kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint})
     kernel.run()
