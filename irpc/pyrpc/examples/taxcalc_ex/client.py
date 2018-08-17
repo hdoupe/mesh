@@ -1,6 +1,6 @@
 from rpc.client import TaskFailure
 from rpc.kernelmanager import KernelManager
-from rpcproxy.client import ProxyClient, deref
+from rpc.proxy.client import ProxyClient, deref
 
 kernel_info = {'new': {'module_path': 'kernel.py'}}
 
