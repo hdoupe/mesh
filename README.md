@@ -116,8 +116,8 @@ What are the parts that need to be assembled for this to work?
 1. There needs to be an OG-USA kernel to which the user can submit OG-USA parameters
 2. There needs to be a Tax-Calculator kernel to run the taxcalc API calls in `get_micro_data.py`. OG-USA spins up a client to submit data to this kernel and retrieve results from it in `txfunc.py`.
 3. The user needs to initiate this process via with
-  - a `KernelManager` to start the kernels described in (1) and (2)
-  - a `Client` to submit data from the user to the OG-USA `kernel` described in (1)
+     - a `KernelManager` to start the kernels described in (1) and (2)
+     - a `Client` to submit data from the user to the OG-USA `kernel` described in (1)
 
 1. Setup the OG-USA kernel:
 ```
