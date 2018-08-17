@@ -6,8 +6,9 @@ from rpc.serializers import (send_msgpack, send_json, send_pickle,
 
 class Kernel():
 
-    def __init__(self, context=None, health_port='5566', submit_task_port='5567',
-                 get_task_port='5568', serializer='pickle'):
+    def __init__(self, context=None, health_port='5566',
+                 submit_task_port='5567', get_task_port='5568',
+                 serializer='pickle'):
         self.context = context or zmq.Context()
         self.set_sockets(health_port, submit_task_port, get_task_port)
         serializers = {
@@ -71,10 +72,14 @@ class Kernel():
             result = self.handlers[message['endpoint']](*message['args'],
                                                         **message['kwargs'])
             status = 'SUCCESS'
+            out = {'task_id': message['task_id'],
+                   'status': status,
+                   'result': result}
         except Exception as e:
-            result = e.__str__()
-            status = 'FAILURE'
-        out = {'task_id': message['task_id'], 'status': status, 'result': result}
+            out = {'task_id': message['task_id'],
+                   'status': 'FAILURE',
+                   'error_type': e.__class__.__name__,
+                   'error_msg': str(e)}
         self.send_func(self.gets_task, out)
         assert self.gets_task.recv() == b'OK'
 

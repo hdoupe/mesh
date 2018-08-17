@@ -1,9 +1,7 @@
-from ogusa.scripts import run_ogusa
-
 from rpc.kernelmanager import KernelManager
 from rpc.client import Client
 
-kernel_info = [
+kernel_info = {
     'taxcalc': {
         'executable': '/Users/henrydoupe/anaconda3/envs/taxcalc-env/bin/python',
         'module_path': 'taxcalc_kernel.py'
@@ -12,8 +10,7 @@ kernel_info = [
         'executable': '/Users/henrydoupe/anaconda3/envs/ospcdyn/bin/python',
         'module_path': 'ogusa_kernel.py'
      }
-
-]
+}
 
 
 with KernelManager(kernel_info) as sk:
@@ -25,6 +22,8 @@ with KernelManager(kernel_info) as sk:
             }
         }
     }
-    client = Client(kernel_id='ogusa')
-    task = client.submit('ogusa_endpoint', kwargs={'user_params': user_params})
-    result = client.get(task)
+    with Client(kernel_id='ogusa') as client:
+        task = client.submit_task('ogusa_endpoint',
+                                  args=(),
+                                  kwargs={'user_params': user_params})
+        result = task.get()
