@@ -76,6 +76,7 @@ class Kernel():
                    'status': status,
                    'result': result}
         except Exception as e:
+            import traceback; traceback.print_exc()
             out = {'task_id': message['task_id'],
                    'status': 'FAILURE',
                    'error_type': e.__class__.__name__,

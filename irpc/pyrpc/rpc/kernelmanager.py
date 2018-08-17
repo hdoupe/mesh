@@ -55,6 +55,20 @@ class KernelManager():
         self.executor = None
         self.config_port = int(config_port)
 
+    def start(self):
+        self.start_config_listener()
+        self.run_kernels()
+
+    def close(self):
+        """
+        Send Ctrl-C to subprocesses that are still alive
+        """
+        while len(self.procs) > 0:
+            proc = self.procs.pop()
+            proc.send_signal(signal.SIGINT)
+
+        self.shutdown_config_listener()
+
     def run_kernels(self):
         """
         Spin up kernel for each item in `kernel_info` dict
@@ -68,16 +82,6 @@ class KernelManager():
                              str(info['get_task_port'])])
             proc = sp.Popen([argv], shell=True)
             self.procs.append(proc)
-
-    def close(self):
-        """
-        Send Ctrl-C to subprocesses that are still alive
-        """
-        while len(self.procs) > 0:
-            proc = self.procs.pop()
-            proc.send_signal(signal.SIGINT)
-
-        self.shutdown_config_listener()
 
     def read_kernel_info(self, kernel_info):
         """

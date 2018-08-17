@@ -162,7 +162,7 @@ _placeholder_methods = [x for x in (set(dir(int)).union(dir(list))
                         if x.startswith('__')] + [
     '__eq__', '__ne__'
 ]
-print(_placeholder_methods)
+# print(_placeholder_methods)
 
 
 def _make_method(name):
