@@ -209,3 +209,73 @@ The environment for this script requires: `irpc`, `pyzmq` and `msgpack` which ca
 pip install pyzmq msgpack
 pip install -e . # from pyrpc directory
 ```
+
+**TaxSim Example**
+
+TaxSim is a fortran package and web interface with over 1000 citations on Google Scholar. It is currently maintained by Dan Feenberg. The fortran package `taxsim9.for` was written to be run from the command line and writes the resulting text file to `stdout`. Thus, some work was necessary in order to run it from a C script. Additions are:
+- `ISO_C_BINDING` use to ease the interactions with C
+- A function `runmodel` was added to wrap the main logic for running the script. 
+- A buffer is passed to `runmodel` and the results are written to it instead of the commandline
+- Capability to pass either a full text file in a string or a path to a text file
+
+I verified that the results did not change after these modifications by re-running the input data with the unmodified TaxSim package and comparing the results.
+
+Please keep in mind that I am a novice C programmer and an even more novice Fortran programmer. That being said, I welcome all feedback and criticism. Also, I am sorry for what I have done to TaxSim. I am happy to discuss these changes more in depth.
+
+The C kernel and its interface with TaxSim are less developed than the Python versions, but they provide a powerful example of the client/kernel and message-queue backed approach.
+
+A `Dockerfile` is provided to link and build the C kernel. The `puf.csv` and `taxsim9.for` files are private and cannot be released. Other files may be released. 
+
+What are the parts that need to be assembled for this to work?
+1. Build the docker file
+2. Run the docker file
+3. In a separate window, interact with the Kernel in Python (or any other available client)
+
+1. **Build the Docker image:**
+```
+docker build -t taxsimlink ./
+```
+
+2. **Run the Docker image:**
+```
+docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked
+```
+
+3. **In another window, Interact with the C kernel:**
+
+```
+from io import StringIO
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import taxcalc
+
+from rpc.client import Client
+from rpc.serializers import receive_json, send_json
+
+from data_prep import taxcalc_to_taxsim
+
+# create taxcalc.Calculator instance to get necessary data for taxsim
+rec = taxcalc.Records()
+pol = taxcalc.Policy()
+calc = taxcalc.Calculator(records=rec, policy=pol)
+calc.calc_all()
+
+# create PUF file that is compatible with TaxSim
+taxsim_puf = taxcalc_to_taxsim(calc)
+
+client = Client('taxsim', health_port='5566', submit_task_port='5567', get_task_port='5568', serializer='json')
+
+args = {'mtr_wrt_group': 'full', 'file_name': taxsim_puf}
+endpoint = 'taxsim'
+result = client.do_task(endpoint, args)
+
+df = pd.read_csv(StringIO(result), sep=' ', skipinitialspace=True)
+
+plt.plot(df.State_Taxable_Income.values, df.srate/100, '.')
+
+client.close()
+```
+
+Future Plans
+-------------
