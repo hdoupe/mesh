@@ -128,6 +128,8 @@ What are the parts that need to be assembled for this to work?
      - a `KernelManager` to start the kernels described in (1) and (2)
      - a `Client` to submit data from the user to the OG-USA `kernel` described in (1)
 
+In depth: 
+
 1. **Setup the OG-USA kernel:**
 ```
 
@@ -231,6 +233,8 @@ What are the parts that need to be assembled for this to work?
 2. Run the docker file
 3. In a separate window, interact with the Kernel in Python (or any other available client)
 
+In depth:
+
 1. **Build the Docker image:**
 ```
 docker build -t taxsimlink ./
@@ -276,6 +280,10 @@ plt.plot(df.State_Taxable_Income.values, df.srate/100, '.')
 
 client.close()
 ```
+
+Notes: 
+  - the C kernel has not been integrated with the `KernelManager` class. 
+  - there should be a `Makefile` for building this outside of Docker at least for Macs and Linux computers
 
 Future Plans
 -------------
