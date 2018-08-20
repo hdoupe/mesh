@@ -47,6 +47,9 @@ class ProxyClient:
     def get_remote(self, varname):
         return self.unwrapped_sync_req('handle_get_remote', varname)
 
+    def close(self):
+        self.__exit__()
+
     def __enter__(self, *args, **kwargs):
         if self._managed_client:
             self.client.__enter__(*args, **kwargs)
