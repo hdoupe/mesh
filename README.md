@@ -5,7 +5,7 @@
 - how to easily integrate a library written in Fortran with a library written in Python
 - how to easily integrate Python libraries that are likely to have incompatible dependency requirements
 
-We want to solve this problems in such a way that users need no knowledge of messaging queues, serialization techniques, or remote-procedure-protocols.
+We want to solve these problems in such a way that users need no knowledge of messaging queues, serialization techniques, or remote-procedure-protocols.
 
 Approach
 ---------
