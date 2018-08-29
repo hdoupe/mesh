@@ -144,7 +144,7 @@ if __name__ == '__main__':
     health_port, submit_task_port, get_task_port = sys.argv[1:]
     kernel = Kernel()
 
-    kernel.register_handlers({'ogusa_endpoint': taxcalc_endpoint})
+    kernel.register_handlers({'ogusa_endpoint': ogusa})
     kernel.run()
 ```
 OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `irpc` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pyrpc` directory and running `pip install -e .`.  
@@ -164,8 +164,7 @@ if __name__ == '__main__':
                     submit_task_port=submit_task_port,
                     get_task_port=get_task_port)
 
-    kernel.register_handlers({'taxcalc_endpoint': taxcalc_endpoint,
-                              'ogusa_tc_endpoint': ogusa_tc_endpoint})
+    kernel.register_handlers({'ogusa_tc_endpoint': ogusa_tc_endpoint})
     kernel.run()
 ```
 The module `get_micro_data.py` containing the function `get_data` and dependent functions is moved into the `examples` where it can be called from `taxcalc_kernel.py`, the kernel running Tax-Calculator.
