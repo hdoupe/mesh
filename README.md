@@ -282,8 +282,24 @@ client.close()
 ```
 
 Notes: 
-  - the C kernel has not been integrated with the `KernelManager` class. 
-  - there should be a `Makefile` for building this outside of Docker at least for Macs and Linux computers
+  - The C kernel has not been integrated with the `KernelManager` class. 
+  - There should be a `Makefile` for building this outside of Docker at least for Macs and Linux computers
 
 Future Plans
 -------------
+In its current form, the Python components of this project are fairly solid and the Python-C-Fortran interaction is functional but could be refined. 
+
+Here are some things that I would like to do with the Python package:
+- Add tests
+- Add debugging support
+- Shore up interactions with packages
+
+Here's what I'd like to do with the C components:
+- Re-write in C++ to better mirror the structure of the Python components
+
+Overall package direction:
+- Should these kernels wrap kernels from the Jupyter ecosystem?
+  - ex. [ipykernl](https://github.com/ipython/ipykernel), [IRKernel](https://github.com/IRkernel/IRkernel)
+- What should the repo organization be?
+  - Non-trivial amounts of code are required to actually apply the `irpc`. Should this code be re-organized as a downstream repo? For example, there could be a project built around managing the Tax-Calculator and OG-USA integration. Or, if we had a R implementation, there could be a package that manages the R interface for Tax-Calculator.
+- Implement client/kernels for R and Julia
