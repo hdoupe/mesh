@@ -120,9 +120,13 @@ class Client:
         assert self.health_check()
 
     def do_task(self, endpoint, args=(), kwargs={}):
+        t = self.submit(endpoint, args, kwargs)
+        return t.get()
+
+    def submit(self, endpoint, args=(), kwargs={}):
         t = Task(self, endpoint, args, kwargs, verbose=self.verbose)
         t.submit()
-        return t.get()
+        return t
 
     def health_check(self):
         self.health_sock.send(b'')
