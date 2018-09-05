@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='rpc',
+    name='mesh',
     version='0.1.0',
     packages=['mesh', 'mesh.proxy'],
     license='',
