@@ -1,5 +1,5 @@
-from rpc.kernelmanager import KernelManager
-from rpc.client import Client
+from mesh.kernelmanager import KernelManager
+from mesh.client import Client
 
 kernel_info = {
     'taxcalc': {

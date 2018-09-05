@@ -1,6 +1,6 @@
-# Glue/Remote-Kernel-Protocol+ (RKP(P)/ reads as: "Remote Kernel Protocol Plus")/IRPC
+# Multiple-language Endpoint Submission Handler (MESH)
 
-`irpc` facilitates cross platform development. Currently, this project is experimental, and we are actively working to improve its functionality and optimize its architecture. `irpc` should be easy to use, understand, modify, and extend. This project has been developed with two problems in mind:
+`mesh` facilitates cross platform development. Currently, this project is experimental, and we are actively working to improve its functionality and optimize its architecture. `mesh` should be easy to use, understand, modify, and extend. This project has been developed with two problems in mind:
 
 - how to easily integrate a library written in Fortran with a library written in Python
 - how to easily integrate Python libraries that are likely to have incompatible dependency requirements
@@ -10,7 +10,7 @@ We want to solve these problems in such a way that users need no knowledge of me
 Approach
 ---------
 
-`irpc` follows a client/kernel model where the client and kernel define a set of endpoints through which the user submits data through the client to the kernel and the kernel responds with the results from the function corresponding to that endpoint. Lucas has extended this approach by implementing a class proxy protocol on top of it which allows for the sequential management of state on the kernel side.
+`mesh` follows a client/kernel model where the client and kernel define a set of endpoints through which the user submits data through the client to the kernel and the kernel responds with the results from the function corresponding to that endpoint. Lucas has extended this approach by implementing a class proxy protocol on top of it which allows for the sequential management of state on the kernel side.
 
 "kernel" is defined as a process that executes code upon request. A "client" facilitates the interaction between the user who is in one environment (and process) and a "kernel" which is in a different process and potentially different environment. This approach is based off of the Jupyter Notebook approach which is nicely summarized [here](https://medium.com/netflix-techblog/notebook-innovation-591ee3221233):
 
@@ -31,8 +31,8 @@ Key Objects:
 Key usage pattern:
 
 ```
-from rpc.kernelmanager import KernelManager
-from rpc.client import Client
+from mesh.kernelmanager import KernelManager
+from mesh.client import Client
 
 kernel_info = {
     'taxcalc1': {
@@ -63,7 +63,7 @@ def taxcalc_endpoint(*args, **kwargs):
 
 if __name__ == '__main__':
     import sys
-    from rpc.kernel import Kernel
+    from mesh.kernel import Kernel
 
     health_port, submit_task_port, get_task_port = sys.argv[1:]
     kernel = Kernel(health_port=health_port,
@@ -77,9 +77,9 @@ if __name__ == '__main__':
 The class-proxy approach cuts through the complexity and exposure of implementation details of the approach shown above. With the class-proxy approach, it looks like this n the `Client` side:
 
 ```
-from rpc.client import TaskFailure
-from rpc.kernelmanager import KernelManager
-from rpc.proxy.client import ProxyClient, deref
+from mesh.client import TaskFailure
+from mesh.kernelmanager import KernelManager
+from mesh.proxy.client import ProxyClient, deref
 
 kernel_info = {'new': {'module_path': 'kernel.py'}}
 
@@ -128,7 +128,7 @@ What are the parts that need to be assembled for this to work?
      - a `KernelManager` to start the kernels described in (1) and (2)
      - a `Client` to submit data from the user to the OG-USA `kernel` described in (1)
 
-In depth: 
+In depth:
 
 1. **Setup the OG-USA kernel:**
 ```
@@ -139,7 +139,7 @@ def ogusa(*args, **kwargs):
 
 if __name__ == '__main__':
     import sys
-    from rpc.kernel import Kernel
+    from mesh.kernel import Kernel
 
     health_port, submit_task_port, get_task_port = sys.argv[1:]
     kernel = Kernel()
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     kernel.register_handlers({'ogusa_endpoint': ogusa})
     kernel.run()
 ```
-OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `irpc` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pyrpc` directory and running `pip install -e .`.  
+OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `mesh` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pymesh` directory and running `pip install -e .`.  
 
 2. **Setup the Tax-Calculator kernel:**
 ```
@@ -157,7 +157,7 @@ def ogusa_tc_endpoint(*args, **kwargs):
 
 if __name__ == '__main__':
     import sys
-    from rpc.kernel import Kernel
+    from mesh.kernel import Kernel
 
     health_port, submit_task_port, get_task_port = sys.argv[1:]
     kernel = Kernel(health_port=health_port,
@@ -173,13 +173,13 @@ The environment required the Tax-Calculator Kernel can be created from the follo
 conda create -n taxcalc-env python=3.6 taxcalc
 source activate taxcalc-env
 pip install pyzmq msgpack
-pip install -e . # from pyrpc directory
+pip install -e . # from pymesh directory
 ```
 
 3. **Finally, run commands against the OG-USA kernel:**
 ```
-from rpc.kernelmanager import KernelManager
-from rpc.client import Client
+from mesh.kernelmanager import KernelManager
+from mesh.client import Client
 
 kernel_info = [
     'taxcalc': {
@@ -205,17 +205,17 @@ with KernelManager(kernel_info) as sk:
     task = client.submit('ogusa_endpoint', kwargs={'user_params': user_params})
     result = task.get()
 ```
-The environment for this script requires: `irpc`, `pyzmq` and `msgpack` which can be installed with the following commands:
+The environment for this script requires: `mesh`, `pyzmq` and `msgpack` which can be installed with the following commands:
 ```
 pip install pyzmq msgpack
-pip install -e . # from pyrpc directory
+pip install -e . # from pymesh directory
 ```
 
 **TaxSim Example**
 
 TaxSim is a fortran package and web interface with over 1000 citations on Google Scholar. It is currently maintained by Dan Feenberg. The fortran package `taxsim9.for` was written to be run from the command line and writes the resulting text file to `stdout`. Thus, some work was necessary in order to run it from a C script. Additions are:
 - `ISO_C_BINDING` use to ease the interactions with C
-- A function `runmodel` was added to wrap the main logic for running the script. 
+- A function `runmodel` was added to wrap the main logic for running the script.
 - A buffer is passed to `runmodel` and the results are written to it instead of the commandline
 - Capability to pass either a full text file in a string or a path to a text file
 
@@ -225,7 +225,7 @@ Please keep in mind that I am a novice C programmer and an even more novice Fort
 
 The C kernel and its interface with TaxSim are less developed than the Python versions, but they provide a powerful example of the client/kernel and message-queue backed approach.
 
-A `Dockerfile` is provided to link and build the C kernel. The `puf.csv` and `taxsim9.for` files are private and cannot be released. Other files may be released. 
+A `Dockerfile` is provided to link and build the C kernel. The `puf.csv` and `taxsim9.for` files are private and cannot be released. Other files may be released.
 
 What are the parts that need to be assembled for this to work?
 1. Build the docker file
@@ -253,8 +253,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import taxcalc
 
-from rpc.client import Client
-from rpc.serializers import receive_json, send_json
+from mesh.client import Client
+from mesh.serializers import receive_json, send_json
 
 from data_prep import taxcalc_to_taxsim
 
@@ -280,13 +280,13 @@ plt.plot(df.State_Taxable_Income.values, df.srate/100, '.')
 client.close()
 ```
 
-Notes: 
-  - The C kernel has not been integrated with the `KernelManager` class. 
+Notes:
+  - The C kernel has not been integrated with the `KernelManager` class.
   - There should be a `Makefile` for building this outside of Docker at least for Macs and Linux computers
 
 Future Plans
 -------------
-In its current form, the Python components of this project are fairly solid and the Python-C-Fortran interaction is functional but could be refined. 
+In its current form, the Python components of this project are fairly solid and the Python-C-Fortran interaction is functional but could be refined.
 
 Here are some things that I would like to do with the Python components:
 - Add tests
@@ -297,8 +297,8 @@ Here's what I'd like to do with the C components:
 - Re-write in C++ to better mirror the structure of the Python components
 
 Overall package direction:
-- Should the `irpc` kernels wrap kernels from the Jupyter ecosystem?
+- Should the `mesh` kernels wrap kernels from the Jupyter ecosystem?
   - ex. [ipykernl](https://github.com/ipython/ipykernel), [IRKernel](https://github.com/IRkernel/IRkernel)
 - What should the repo organization be?
-  - Non-trivial amounts of code are required to actually apply the `irpc`. Should this code be re-organized as a downstream repo? For example, there could be a project built around managing the Tax-Calculator and OG-USA integration. Or, if we had a R implementation, there could be a package that manages the R interface for Tax-Calculator.
+  - Non-trivial amounts of code are required to actually apply the `mesh`. Should this code be re-organized as a downstream repo? For example, there could be a project built around managing the Tax-Calculator and OG-USA integration. Or, if we had a R implementation, there could be a package that manages the R interface for Tax-Calculator.
 - Implement client/kernels for R and Julia

@@ -1,4 +1,4 @@
-from rpc.proxy.kernel import ProxyKernel
+from mesh.proxy.kernel import ProxyKernel
 
 import taxcalc
 

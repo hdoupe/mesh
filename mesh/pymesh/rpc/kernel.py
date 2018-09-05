@@ -1,7 +1,7 @@
 import zmq
 
-from rpc.serializers import (send_msgpack, send_json, send_pickle,
-                             receive_msgpack, receive_json, receive_pickle)
+from mesh.serializers import (send_msgpack, send_json, send_pickle,
+                              receive_msgpack, receive_json, receive_pickle)
 
 
 class Kernel():

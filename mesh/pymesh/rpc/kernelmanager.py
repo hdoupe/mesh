@@ -5,7 +5,7 @@ import concurrent.futures
 
 import zmq
 
-from rpc.serializers import send_json, receive_json
+from mesh.serializers import send_json, receive_json
 
 
 def get_kernel_config(kernel_info, kernel_id):

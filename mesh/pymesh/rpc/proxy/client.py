@@ -1,4 +1,4 @@
-from rpc.client import Client, TaskFailure
+from mesh.client import Client, TaskFailure
 
 
 _local_netref_attrs = frozenset([

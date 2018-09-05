@@ -1,4 +1,4 @@
-from rpc.kernel import Kernel
+from mesh.kernel import Kernel
 import builtins
 
 
