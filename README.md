@@ -48,7 +48,7 @@ kwargs = {'kwarg1': v1, 'kwarg2': v2}
 
 with KernelManager(kernel_info) as km:
     client = Client(kernel_id='taxcalc1')
-    task = client.submit_task(endpoint, args=args, kwargs=kwargs)
+    task = client.submit(endpoint, args=args, kwargs=kwargs)
     result = task.get()
     print(result)
 
@@ -271,7 +271,8 @@ client = Client('taxsim', health_port='5566', submit_task_port='5567', get_task_
 
 args = {'mtr_wrt_group': 'full', 'file_name': taxsim_puf}
 endpoint = 'taxsim'
-result = client.do_task(endpoint, args)
+task = client.submit(endpoint, args)
+result = task.get()
 
 df = pd.read_csv(StringIO(result), sep=' ', skipinitialspace=True)
 
