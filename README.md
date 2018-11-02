@@ -30,7 +30,7 @@ Key Objects:
 
 Key usage pattern:
 
-```
+```python
 from mesh.kernelmanager import KernelManager
 from mesh.client import Client
 
@@ -56,7 +56,7 @@ with KernelManager(kernel_info) as km:
 
 The `taxcalc_kernel.py` module:
 
-```
+```python
 def taxcalc_endpoint(*args, **kwargs):
     import taxcalc
     return taxcalc.tbi.run_nth_year_taxcalc_model(*args, **kwargs)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
 The class-proxy approach cuts through the complexity and exposure of implementation details of the approach shown above. With the class-proxy approach, it looks like this n the `Client` side:
 
-```
+```python
 from mesh.client import TaskFailure
 from mesh.kernelmanager import KernelManager
 from mesh.proxy.client import ProxyClient, deref
@@ -113,7 +113,7 @@ OG-USA depends on Tax-Calculator for calculating marginal-tax-rates. In the past
 
 Fortunately, OG-USA's primary interaction with Tax-Calculator can be isolated to one API call:
 
-```
+```python
 micro_data = get_micro_data.get_data(baseline=baseline,
                                      start_year=beg_yr,
                                      reform=reform, data=data,
@@ -131,7 +131,7 @@ What are the parts that need to be assembled for this to work?
 In depth:
 
 1. **Setup the OG-USA kernel:**
-```
+```python
 
 def ogusa(*args, **kwargs):
     from ogusa.scripts import run_ogusa
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `mesh` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pymesh` directory and running `pip install -e .`.  
 
 2. **Setup the Tax-Calculator kernel:**
-```
+```python
 def ogusa_tc_endpoint(*args, **kwargs):
     import get_micro_data
     return get_micro_data.get_data(*args, **kwargs)
@@ -177,7 +177,7 @@ pip install -e . # from pymesh directory
 ```
 
 3. **Finally, run commands against the OG-USA kernel:**
-```
+```python
 from mesh.kernelmanager import KernelManager
 from mesh.client import Client
 
@@ -206,7 +206,7 @@ with KernelManager(kernel_info) as sk:
     result = task.get()
 ```
 The environment for this script requires: `mesh`, `pyzmq` and `msgpack` which can be installed with the following commands:
-```
+```bash
 pip install pyzmq msgpack
 pip install -e . # from pymesh directory
 ```
@@ -235,18 +235,18 @@ What are the parts that need to be assembled for this to work?
 In depth:
 
 1. **Build the Docker image:**
-```
+```bash
 docker build -t taxsimlink ./
 ```
 
 2. **Run the Docker image:**
-```
+```bash
 docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked
 ```
 
 3. **In another window, Interact with the C kernel:**
 
-```
+```python
 from io import StringIO
 
 import pandas as pd
