@@ -1,5 +1,3 @@
-//  Hello World server
-
 #include <zmq.h>
 #include <cjson/cJSON.h>
 #include <stdio.h>
@@ -20,13 +18,16 @@ struct params {
     char *file_name;
 };
 
+
 static int s_send (void *socket, char *string);
 static char *s_recv (void *socket);
+int handler (char *msg, void* socket);
 int parse_status(struct message *m, const char * const m_str);
 int json_status(char **, char *, char *, char *);
 int taxsimrun(char *, char *, void *socket);
 int parse_taxsim_params(struct params *input, const char * const params);
 extern void runmodel(char *, int, char *, int, char *, int);
+
 
 int main (void)
 {
@@ -44,7 +45,7 @@ int main (void)
     void *gets_task = zmq_socket (context, ZMQ_REQ);
     // host.docker.internal is necessary for macs
     // this should be changed to localhost to be more portable
-    zmq_connect (gets_task, "tcp://host.docker.internal:5568");
+    zmq_connect (gets_task, "tcp://localhost:5568");
     while (1) {
         char *msg;
         // polling http://zguide.zeromq.org/page:all#Handling-Multiple-Sockets

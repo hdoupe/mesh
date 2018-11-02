@@ -147,7 +147,7 @@ if __name__ == '__main__':
     kernel.register_handlers({'ogusa_endpoint': ogusa})
     kernel.run()
 ```
-OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `mesh` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pymesh` directory and running `pip install -e .`.  
+OG-USA is then setup to run in a conda environment `ospcdyn` defined in this [`environment.yml`](https://github.com/hdoupe/OG-USA/blob/91b1d7ffb19f88456da5d1188be151897dc1d4d0/environment.yml) file. Note that `taxcalc` is not in the dependency list. Until `mesh` is pushed to PyPi or conda, a local install using this repo will be necessary. This can be accomplished by navigating to the `pymesh` directory and running `pip install -e .`.
 
 2. **Setup the Tax-Calculator kernel:**
 ```python
@@ -232,16 +232,16 @@ What are the parts that need to be assembled for this to work?
 2. Run the docker file
 3. In a separate window, interact with the Kernel in Python (or any other available client)
 
-In depth:
+In depth (steps 1 and 2 can be done without docker. See the [c-mesh install instructions](mesh/cmesh/README.md)):
 
 1. **Build the Docker image:**
 ```bash
-docker build -t taxsimlink ./
+docker build -t cmeshkernel ./
 ```
 
 2. **Run the Docker image:**
 ```bash
-docker run -p 5566:5566 -p 5567:5567 -t taxsimlink ./linked
+docker run -p 5566:5566 -p 5567:5567 -t cmeshkernel ./cmeshkernel
 ```
 
 3. **In another window, Interact with the C kernel:**
