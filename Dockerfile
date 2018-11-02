@@ -31,7 +31,7 @@ WORKDIR /home/irpc
 ENV LD_LIBRARY_PATH "/home/cJSON/build/"
 
 RUN gcc -c kernel.c -o kernel.o -g
-RUN gfortran kernel.o taxsim9.for -o linked -lczmq -lzmq -lcjson -g
+RUN gfortran kernel.o taxsim9.for -o cmeshkernel -lczmq -lzmq -lcjson -g
 
 RUN gfortran taxsim9_unmodified.for -o taxsim9_unmod
 
